@@ -76,7 +76,7 @@ const IntelligenceFeed = () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
 
-            const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            const backendUrl = import.meta.env.VITE_API_URL || 'https://spectaglint-ai-production.up.railway.app';
 
             // Forcefully sync the auth token to the extension instantly when the feed page loads
             window.postMessage({

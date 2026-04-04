@@ -8,6 +8,7 @@
         "storage"
     ],
     "host_permissions": [
+        "https://spectaglint-ai-production.up.railway.app/*",
         "http://localhost:3000/*"
     ],
     "background": {
@@ -18,7 +19,7 @@
         "default_title": "Spectaglint AI"
     },
     "content_security_policy": {
-        "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://localhost:3000;"
+        "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://spectaglint-ai-production.up.railway.app http://localhost:3000;"
     },
     "content_scripts": [
         {

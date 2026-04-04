@@ -45,7 +45,7 @@ const MainLayout = () => {
                     type: 'SYNC_KEYS',
                     payload: {
                         supabaseToken: session.access_token,
-                        backendUrl: import.meta.env.VITE_API_URL || 'http://localhost:3000'
+                        backendUrl: import.meta.env.VITE_API_URL || 'https://spectaglint-ai-production.up.railway.app'
                     }
                 }, '*');
             }

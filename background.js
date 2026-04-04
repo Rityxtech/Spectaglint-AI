@@ -2,7 +2,7 @@ let offscreenCreating = null;
 let isListening = false;
 let sessionLogs = [];
 let eventSource = null;
-let backendUrl = 'http://localhost:3000';
+let backendUrl = 'https://spectaglint-ai-production.up.railway.app';
 let supabaseToken = '';
 
 async function loadConfig() {

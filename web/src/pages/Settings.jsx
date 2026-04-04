@@ -45,7 +45,7 @@ const Settings = () => {
                     telegramToken: data.telegram_bot_token || '',
                     telegramChatId: data.telegram_chat_id || '',
                     supabaseToken: session?.access_token || '',
-                    backendUrl: import.meta.env.VITE_API_URL || 'http://localhost:3000'
+                    backendUrl: import.meta.env.VITE_API_URL || 'https://spectaglint-ai-production.up.railway.app'
                 }
             }, '*');
         } catch (err) {
