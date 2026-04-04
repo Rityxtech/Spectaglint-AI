@@ -51,6 +51,26 @@ app.get('/health', (req, res) => {
     });
 });
 
+// ── DB Debug Check (public) ───────────────────────────────
+// Visit this purely to confirm if the tables were built on Railway.
+app.get('/test-db', async (req, res) => {
+    const { pool } = require('./lib/db');
+    try {
+        const result = await pool.query(`
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public'
+        `);
+        res.json({
+            status: 'success',
+            message: 'Database connection is alive.',
+            tablesFound: result.rows.map(r => r.table_name)
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'DB_ERROR', message: err.message, stack: err.stack });
+    }
+});
+
 // ── Stripe Webhook (public, raw body) ────────────────────
 const walletRouter = require('./routes/wallet');
 app.use('/wallet/webhook', express.raw({ type: 'application/json' }), walletRouter);
