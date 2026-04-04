@@ -3,8 +3,9 @@ const { Pool } = require('pg');
 
 // Railway provides DATABASE_URL automatically when you attach a Postgres plugin.
 // Locally, set it in your .env file.
+const connectionString = process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL;
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: connectionString
   // Removed strict ssl config — Railway's internal connection handles this automatically,
   // whereas forcing it can cause silent socket disconnects.
 });
@@ -141,7 +142,7 @@ const initSchema = async () => {
 };
 
 // Run schema init at startup only if DATABASE_URL is provided
-if (process.env.DATABASE_URL) {
+if (process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL) {
   initSchema().catch(err => {
     let errMsg = err.message;
     if (!errMsg) errMsg = JSON.stringify(err, Object.getOwnPropertyNames(err));
