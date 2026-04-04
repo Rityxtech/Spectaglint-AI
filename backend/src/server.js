@@ -54,6 +54,13 @@ app.get('/health', (req, res) => {
 // ── DB Debug Check (public) ───────────────────────────────
 // Visit this purely to confirm if the tables were built on Railway.
 app.get('/test-db', async (req, res) => {
+    if (!process.env.DATABASE_URL) {
+        return res.status(400).json({
+            status: 'error',
+            message: 'DATABASE_URL environment variable is MISSING. Railway has not connected your database to this backend.'
+        });
+    }
+
     const { pool } = require('./lib/db');
     try {
         const result = await pool.query(`
