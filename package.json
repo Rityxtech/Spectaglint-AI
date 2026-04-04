@@ -1,0 +1,12 @@
+{
+    "name": "spectaglint-ai-root",
+    "version": "1.0.0",
+    "description": "Root package.json to route Railway deployments to the backend folder automatically.",
+    "engines": {
+        "node": ">=20.0.0"
+    },
+    "scripts": {
+        "build": "cd backend && npm install",
+        "start": "cd backend && npm start"
+    }
+}
