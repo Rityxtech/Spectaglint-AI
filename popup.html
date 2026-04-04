@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Sound Translator Extension</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;700&display=swap');
+
+    body {
+      font-family: 'Inter', sans-serif;
+      width: 350px;
+      height: 500px;
+      margin: 0;
+      padding: 0;
+      background: #0A0F0D;
+      color: #FFFFFF;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Navigation / Go to Dashboard */
+    .top-bar {
+      display: flex;
+      justify-content: flex-end;
+      padding: 8px 16px;
+      background: #020617;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .dashboard-link {
+      font-size: 11px;
+      color: #9CA3AF;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.2s;
+      cursor: pointer;
+    }
+
+    .dashboard-link:hover {
+      color: #39FF14;
+    }
+
+    /* Main Status Header */
+    .status-header {
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border-bottom: 1px solid #1e293b;
+      background: #1A2421;
+    }
+
+    .status-text {
+      font-size: 14px;
+      font-weight: 700;
+      color: #6B7280;
+      margin-top: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-text.active {
+      color: #39FF14;
+      text-shadow: 0 0 10px rgba(57, 255, 20, 0.4);
+    }
+
+    .pulse-dot {
+      display: none;
+      width: 8px;
+      height: 8px;
+      background-color: #ef4444;
+      /* red for LIVE */
+      border-radius: 50%;
+    }
+
+    .status-text.active .pulse-dot {
+      display: inline-block;
+      animation: blink 1.5s infinite;
+    }
+
+    @keyframes blink {
+      0% {
+        opacity: 1;
+        box-shadow: 0 0 5px rgba(239, 68, 68, 0.8);
+      }
+
+      50% {
+        opacity: 0.3;
+      }
+
+      100% {
+        opacity: 1;
+        box-shadow: 0 0 5px rgba(239, 68, 68, 0.8);
+      }
+    }
+
+    /* Massive Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 80px;
+      height: 44px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #334155;
+      transition: .4s;
+      border-radius: 44px;
+      border: 2px solid #1e293b;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 34px;
+      width: 34px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #9CA3AF;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked+.slider {
+      background-color: #39FF14;
+      border-color: #39FF14;
+      box-shadow: 0 0 20px rgba(57, 255, 20, 0.4);
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(36px);
+      background-color: #000;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Scrolling Mini-Terminal */
+    .console-wrapper {
+      flex: 1;
+      padding: 12px;
+      background: #020617;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .console-header {
+      font-size: 10px;
+      color: #6B7280;
+      font-family: 'Fira Code', monospace;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .wave-animation {
+      display: none;
+      height: 10px;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .active-capture .wave-animation {
+      display: flex;
+    }
+
+    .wave-bar {
+      width: 3px;
+      background: #39FF14;
+      height: 100%;
+      border-radius: 1px;
+      animation: wave 1s infinite alternate;
+    }
+
+    .wave-bar:nth-child(2) {
+      animation-delay: 0.1s;
+    }
+
+    .wave-bar:nth-child(3) {
+      animation-delay: 0.2s;
+    }
+
+    .wave-bar:nth-child(4) {
+      animation-delay: 0.3s;
+    }
+
+    @keyframes wave {
+      0% {
+        height: 20%;
+        opacity: 0.5;
+      }
+
+      100% {
+        height: 100%;
+        opacity: 1;
+        box-shadow: 0 0 5px rgba(57, 255, 20, 0.5);
+      }
+    }
+
+    .log-container {
+      flex: 1;
+      overflow-y: auto;
+      font-family: 'Fira Code', monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      padding-right: 4px;
+    }
+
+    .log-container::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .log-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .log-container::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 2px;
+    }
+
+    .log-entry {
+      margin-bottom: 8px;
+    }
+
+    .log-system {
+      color: #6B7280;
+    }
+
+    .log-transcription {
+      color: #D1D5DB;
+    }
+
+    .log-answer {
+      background: rgba(57, 255, 20, 0.1);
+      border-left: 2px solid #39FF14;
+      padding: 6px;
+      margin-top: 6px;
+      color: #39FF14;
+      box-shadow: inset 0 0 10px rgba(57, 255, 20, 0.05);
+    }
+
+    .log-answer .ai-tag {
+      font-weight: bold;
+      margin-bottom: 2px;
+      display: block;
+    }
+
+    .buffering {
+      display: none;
+      color: #9CA3AF;
+      font-style: italic;
+      margin-bottom: 8px;
+    }
+
+    .active-capture .buffering {
+      display: block;
+    }
+
+    .buffering::after {
+      content: '...';
+      animation: type 1.5s infinite steps(4, end);
+    }
+
+    @keyframes type {
+
+      0%,
+      100% {
+        content: '';
+      }
+
+      25% {
+        content: '.';
+      }
+
+      50% {
+        content: '..';
+      }
+
+      75% {
+        content: '...';
+      }
+    }
+
+    /* Coin Counter */
+    .coin-counter {
+      padding: 12px 16px;
+      background: #0A0F0D;
+      border-top: 1px solid #1e293b;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+    }
+
+    .coin-display {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .coin-icon {
+      color: #39FF14;
+      text-shadow: 0 0 8px rgba(57, 255, 20, 0.5);
+    }
+
+    .api-settings {
+      display: none;
+      /* hidden by default, accessible if user clicks something */
+      padding: 10px;
+      background: #020617;
+    }
+  </style>
+</head>
+
+<body id="extensionBody">
+
+  <div class="top-bar">
+    <a href="#" id="openDashboard" class="dashboard-link">⮜ Go to Dashboard</a>
+  </div>
+
+  <div class="status-header">
+    <label class="switch">
+      <input type="checkbox" id="powerToggle">
+      <span class="slider"></span>
+    </label>
+    <div class="status-text" id="statusLabel">
+      <span class="pulse-dot"></span> <span id="statusText">System Offline</span>
+    </div>
+  </div>
+
+  <div class="console-wrapper" id="consoleWrapper">
+    <div class="console-header">
+      <span>> terminal // secure_feed</span>
+      <div class="wave-animation">
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+      </div>
+    </div>
+    <div class="log-container" id="logContainer">
+      <div class="log-entry log-system">System initialized. Waiting for uplink...</div>
+    </div>
+    <div class="buffering" id="bufferingIndicator">Audio fragments processing</div>
+  </div>
+
+  <div class="coin-counter">
+    <span style="color: #6B7280;">Telemetry Tokens</span>
+    <div class="coin-display">
+      <span class="coin-icon">⚡</span> 1,250
+    </div>
+  </div>
+
+  <!-- Keep hidden fields for compatibility if previous popup.js relied on it -->
+  <div style="display:none;" id="compatibilityFields">
+    <input type="password" id="groqKey" />
+    <input type="password" id="telegramToken" />
+    <input type="text" id="telegramChatId" />
+    <button id="saveBtn"></button>
+    <div id="toggleDashboard"></div>
+    <div id="dashboard"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+
+</html>

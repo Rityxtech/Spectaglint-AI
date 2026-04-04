@@ -1,0 +1,34 @@
+{
+    "manifest_version": 3,
+    "name": "Spectaglint AI Companion",
+    "version": "1.0.0",
+    "description": "Secure, real-time universal audio listener, question detector, and smart assistant interface.",
+    "permissions": [
+        "offscreen",
+        "storage"
+    ],
+    "host_permissions": [
+        "http://localhost:3000/*"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "action": {
+        "default_popup": "popup.html",
+        "default_title": "Spectaglint AI"
+    },
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://localhost:3000;"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "http://localhost:3001/*",
+                "http://localhost:5173/*"
+            ],
+            "js": [
+                "content.js"
+            ]
+        }
+    ]
+}

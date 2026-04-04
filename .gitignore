@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Environment secrets — NEVER commit these
+.env
+.env.local
+.env.production
+.env.development
+
+# Build output
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# SQLite (legacy — not used on Railway)
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+database/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Uploads (user audio chunks — ephemeral)
+backend/uploads/*
+!backend/uploads/.gitkeep

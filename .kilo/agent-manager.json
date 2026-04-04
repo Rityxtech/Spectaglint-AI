@@ -1,0 +1,14 @@
+{
+  "worktrees": {},
+  "sessions": {
+    "ses_2b466e5a5ffeZfN71XzpiDIM7E": {
+      "worktreeId": null,
+      "createdAt": "2026-04-02T00:30:20.657Z"
+    },
+    "ses_2b4641e2effeKmJlAw2G4eYmd3": {
+      "worktreeId": null,
+      "createdAt": "2026-04-02T00:33:20.331Z"
+    }
+  },
+  "sessionsCollapsed": true
+}
