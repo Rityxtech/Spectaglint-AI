@@ -141,10 +141,17 @@ const initSchema = async () => {
   console.log('[DB] Schema initialized.');
 };
 
-// Run schema init at startup
-initSchema().catch(err => {
-  console.error('[DB] Schema init failed:', err.message);
-  process.exit(1);
-});
+// Run schema init at startup only if DATABASE_URL is provided
+if (process.env.DATABASE_URL) {
+  initSchema().catch(err => {
+    console.error('[DB] Schema init failed:', err.message || err);
+    // Do not process.exit(1) here so the server can stay alive while debugging
+  });
+} else {
+  console.error('====================================================');
+  console.error('[DB FATAL] DATABASE_URL is missing!');
+  console.error('[DB FATAL] Please add a PostgreSQL plugin in Railway.');
+  console.error('====================================================');
+}
 
 module.exports = { query, getClient, pool };
