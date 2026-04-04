@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { query } = require('../lib/db');
 const { getWallet, creditCoins } = require('../services/coinService');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy_key_to_prevent_startup_crash');
 
 // GET /wallet
 router.get('/', async (req, res) => {
