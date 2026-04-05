@@ -10,7 +10,6 @@ const Settings = () => {
     });
 
     const [apiConfig, setApiConfig] = useState({
-        telegramToken: '',
         telegramChatId: ''
     });
 
@@ -30,7 +29,6 @@ const Settings = () => {
                 avatar_url: data.avatar_url || ''
             });
             setApiConfig({
-                telegramToken: data.telegram_bot_token || '',
                 telegramChatId: data.telegram_chat_id || ''
             });
             // Get the current Supabase session token so the extension can post results to the backend
@@ -42,7 +40,6 @@ const Settings = () => {
                 type: 'SYNC_KEYS',
                 payload: {
                     groqKey: '',
-                    telegramToken: data.telegram_bot_token || '',
                     telegramChatId: data.telegram_chat_id || '',
                     supabaseToken: session?.access_token || '',
                     backendUrl: import.meta.env.VITE_API_URL || 'https://spectaglint-ai-production.up.railway.app'
@@ -61,7 +58,6 @@ const Settings = () => {
         try {
             await api.updateProfile({
                 username: profile.username,
-                telegram_bot_token: apiConfig.telegramToken,
                 telegram_chat_id: apiConfig.telegramChatId
             });
             // Broadcast to content.js so the Extension can save the updated keys
@@ -69,7 +65,6 @@ const Settings = () => {
                 type: 'SYNC_KEYS',
                 payload: {
                     groqKey: '', // Assuming web app uses backend later, or extension uses its own config. Or we can ask user. Let's send what we have.
-                    telegramToken: apiConfig.telegramToken,
                     telegramChatId: apiConfig.telegramChatId
                 }
             }, '*');

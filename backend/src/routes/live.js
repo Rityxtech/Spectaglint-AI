@@ -242,8 +242,9 @@ Always reply with ONLY this exact JSON:
             });
 
             // Telegram logic
-            if (keys.telegram_bot_token && keys.telegram_chat_id) {
-                fetch(`https://api.telegram.org/bot${keys.telegram_bot_token}/sendMessage`, {
+            const GLOBAL_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+            if (GLOBAL_BOT_TOKEN && keys.telegram_chat_id) {
+                fetch(`https://api.telegram.org/bot${GLOBAL_BOT_TOKEN}/sendMessage`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
