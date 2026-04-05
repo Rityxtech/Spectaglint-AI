@@ -98,8 +98,8 @@ router.put('/profile', async (req, res) => {
     const fields = []; const params = [];
 
     if (username) {
-        if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) return res.status(400).json({ error: 'INVALID_USERNAME' });
-        params.push(username); fields.push(`username = $${params.length}`);
+        if (!/^.{3,50}$/.test(username)) return res.status(400).json({ error: 'INVALID_USERNAME' });
+        params.push(username.trim()); fields.push(`username = $${params.length}`);
     }
     if (avatar_url !== undefined) { params.push(avatar_url); fields.push(`avatar_url = $${params.length}`); }
     if (telegram_chat_id !== undefined) { params.push(telegram_chat_id); fields.push(`telegram_chat_id = $${params.length}`); }
