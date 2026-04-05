@@ -17,8 +17,9 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use(helmet());
 
 // ── CORS ─────────────────────────────────────────────────
+const safeFrontendUrl = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/["']/g, '') : null;
 const ALLOWED_ORIGINS = [
-    process.env.FRONTEND_URL,           // Vercel prod URL
+    safeFrontendUrl,                    // Vercel prod URL
     'http://localhost:5173',            // Vite dev
     'http://localhost:3000',
     'http://localhost:3001',            // Web app localhost

@@ -42,10 +42,10 @@ function pushLog(userId, htmlContent) {
 router.get('/stream', (req, res) => {
     const userId = req.user.id; // from authenticate middleware
 
-    // Required headers for SSE
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Prevent Nginx/Railway proxy buffering
     res.flushHeaders(); // flush the headers to establish connection
 
     // Send an initial connected message

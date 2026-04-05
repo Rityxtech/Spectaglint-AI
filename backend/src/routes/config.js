@@ -103,7 +103,7 @@ router.put('/profile', async (req, res) => {
     }
     if (avatar_url !== undefined) { params.push(avatar_url); fields.push(`avatar_url = $${params.length}`); }
     if (telegram_chat_id !== undefined) { params.push(telegram_chat_id); fields.push(`telegram_chat_id = $${params.length}`); }
-    if (telegram_bot_token !== undefined) { params.push(telegram_bot_token); fields.push(`telegram_bot_token = $${params.length}`); }
+    if (telegram_bot_token !== undefined && !telegram_bot_token.startsWith('••••••••')) { params.push(telegram_bot_token); fields.push(`telegram_bot_token = $${params.length}`); }
     if (preferred_lang !== undefined) { params.push(preferred_lang); fields.push(`preferred_lang = $${params.length}`); }
     if (full_name !== undefined) { params.push(full_name); fields.push(`full_name = $${params.length}`); }
     if (bio !== undefined) { params.push(bio); fields.push(`bio = $${params.length}`); }
