@@ -326,24 +326,6 @@ const IntelligenceFeed = () => {
                             )}
                         </div>
 
-                        {/* Bottom AI response strip */}
-                        <div className="shrink-0 border-t border-outline-variant/20 bg-surface-container-lowest px-4 py-3">
-                            <div className="text-[9px] font-['JetBrains_Mono'] text-on-surface-variant/40 uppercase tracking-widest mb-2">
-                                AI_RESPONSES // {responses.length} LOGGED
-                            </div>
-                            <div className="space-y-2 max-h-52 overflow-y-auto">
-                                {responses.length === 0 ? (
-                                    <p className="text-[9px] text-on-surface-variant/30 italic">No AI responses yet.</p>
-                                ) : (
-                                    responses.map((res, i) => (
-                                        <div key={res.id || i} className="bg-surface-container border border-outline-variant/15 p-2 rounded-sm">
-                                            <p className="text-[9px] text-on-surface-variant/50 italic mb-1 truncate">"{res.question}"</p>
-                                            <p className="text-[11px] text-on-surface/80 leading-snug line-clamp-3">{res.answer}</p>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
                     </div>
                 </div>
             )}
@@ -395,7 +377,7 @@ const ResponsesPanel = ({ responses, onCopy, logLines, isLive }) => (
                     </p>
                 </div>
             ) : (
-                responses.map((res, i) => (
+                responses.slice(0, 1).map((res, i) => (
                     <IntelligenceCard key={res.id || i} data={res} onCopy={() => onCopy(res.answer)} />
                 ))
             )}
