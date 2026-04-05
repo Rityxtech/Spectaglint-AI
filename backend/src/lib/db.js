@@ -64,6 +64,15 @@ const initSchema = async () => {
             updated_at TIMESTAMPTZ DEFAULT NOW()
         );
 
+        -- Extend Profiles for Interview/Resume Features
+        ALTER TABLE profiles ADD COLUMN IF NOT EXISTS full_name TEXT;
+        ALTER TABLE profiles ADD COLUMN IF NOT EXISTS bio TEXT;
+        ALTER TABLE profiles ADD COLUMN IF NOT EXISTS skills JSONB;
+        ALTER TABLE profiles ADD COLUMN IF NOT EXISTS experience JSONB;
+        ALTER TABLE profiles ADD COLUMN IF NOT EXISTS projects JSONB;
+        ALTER TABLE profiles ADD COLUMN IF NOT EXISTS resume_url TEXT;
+        ALTER TABLE profiles ADD COLUMN IF NOT EXISTS social_links JSONB;
+
         CREATE TABLE IF NOT EXISTS wallets (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             user_id UUID UNIQUE NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
