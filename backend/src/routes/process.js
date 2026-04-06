@@ -6,8 +6,10 @@ const path = require('path');
 const { authenticate } = require('../middleware/auth');
 const { transcribeAudio, analyzeBulkTranscript } = require('../services/groqService');
 
-// Configure Multer to save temporarily to /uploads folder
-const uploadDir = path.join(__dirname, '../../uploads');
+const os = require('os');
+
+// Configure Multer to save temporarily to OS temp directory
+const uploadDir = path.join(os.tmpdir(), 'spectaglint-uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
