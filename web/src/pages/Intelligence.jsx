@@ -226,22 +226,22 @@ const IntelligenceFeed = () => {
                     </span>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                    <div className="flex items-center gap-2 border-r border-current/20 pr-3">
-                        <span className="hidden md:inline">{isLive ? 'STREAM_ON' : 'STREAM_OFF'}</span>
-                        <label className="relative inline-flex items-center cursor-pointer">
+                    <div className="flex items-center gap-2 md:gap-3 border-r border-current/20 pr-3">
+                        <span className={`font-black text-[10px] md:text-sm tracking-widest ${isLive ? 'text-primary' : 'text-on-surface'}`}>{isLive ? 'STREAM_ON' : 'STREAM_OFF'}</span>
+                        <label className="relative inline-flex items-center cursor-pointer ml-1 md:ml-2">
                             <input type="checkbox" className="sr-only peer" checked={isLive} onChange={handleToggle} />
-                            <div className="w-8 h-4 bg-surface-container-high peer-focus:outline-none border border-outline-variant/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-black after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-outline-variant/50 after:border-outline-variant/50 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary peer-checked:after:bg-black"></div>
+                            <div className="w-12 h-6 md:w-16 md:h-8 bg-surface-container-highest peer-focus:outline-none border border-outline-variant/40 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-[#0a0f0d] after:content-[''] after:absolute after:top-[2px] after:left-[2px] md:after:left-[3px] after:bg-outline-variant/50 after:border-outline-variant/50 after:border after:rounded-full after:h-5 after:w-5 md:after:h-7 md:after:w-7 after:transition-all peer-checked:bg-primary peer-checked:after:bg-[#0a0f0d] shadow-[inset_0_2px_5px_rgba(0,0,0,0.5)] cursor-pointer"></div>
                         </label>
                     </div>
-                    {isLive && <Radio size={10} className="animate-pulse" />}
-                    {!isLive && <WifiOff size={10} className="opacity-40" />}
+                    {isLive && <Radio size={12} className="animate-pulse hidden md:block" />}
+                    {!isLive && <WifiOff size={12} className="opacity-40 hidden md:block" />}
                     {/* Mobile fullscreen button */}
                     <button
                         onClick={openFullscreen}
-                        className="md:hidden flex items-center gap-1 text-[9px] uppercase tracking-widest border border-current/30 px-2 py-1 hover:bg-current/10 transition-colors ml-1"
+                        className="md:hidden flex items-center gap-1 text-[9px] uppercase tracking-widest border border-current/30 px-2 py-1.5 hover:bg-current/10 transition-colors ml-1"
                         title="Fullscreen terminal"
                     >
-                        <Maximize2 size={10} /> EXPAND
+                        <Maximize2 size={12} /> EXPAND
                     </button>
                 </div>
             </div>
