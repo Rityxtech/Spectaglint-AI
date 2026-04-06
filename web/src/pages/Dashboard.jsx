@@ -83,9 +83,6 @@ function useExtensionStatus() {
     DASHBOARD PAGE
 ═════════════════════════════════════════ */
 const Dashboard = () => {
-    const meetingsCount = useCounter(stats.totalMeetings);
-    const questionsCount = useCounter(stats.totalQuestions);
-    const coinsCount = useCounter(stats.coinsRemaining);
     const { connected: extensionOnline, downloadExtension } = useExtensionStatus();
     const [filter, setFilter] = useState('all');
     const [showMobileFilter, setShowMobileFilter] = useState(false);

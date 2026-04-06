@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Chrome, CheckCircle, AlertCircle } from 'lucide-react';
+import { Download, Monitor, CheckCircle, AlertCircle } from 'lucide-react';
 
 const ExtensionInstall = () => {
   const [installInfo, setInstallInfo] = useState(null);
@@ -66,7 +66,7 @@ const ExtensionInstall = () => {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <Chrome className="w-16 h-16 text-primary mx-auto mb-4" />
+          <Monitor className="w-16 h-16 text-primary mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-on-surface mb-2">Install Spectaglint AI Extension</h1>
           <p className="text-on-surface-variant">Enable real-time AI assistance for your meetings</p>
         </div>
