@@ -15,6 +15,7 @@ const IntelligenceFeed = () => {
     // ── Real-time terminal log lines streamed from extension
     const [loading, setLoading] = useState(false);
     const [logLines, setLogLines] = useState([]);
+    const [serviceMode, setServiceMode] = useState('LIVE_ANSWERS');
     const [extStatus, setExtStatus] = useState('IDLE'); // 'IDLE' | 'LIVE' | 'STOPPED'
     const terminalRef = useRef(null);
     const mobileTerminalRef = useRef(null);
@@ -213,7 +214,7 @@ const IntelligenceFeed = () => {
 
                 {/* Right: Active Telemetry / Trans Matrix */}
                 <div className="md:col-span-5 flex flex-col gap-3">
-                    <ActiveSessionPanel logLines={logLines} isLive={isLive} onClear={clearTerminal} />
+                    <ActiveSessionPanel logLines={logLines} isLive={isLive} onClear={clearTerminal} serviceMode={serviceMode} setServiceMode={setServiceMode} />
                 </div>
             </div>
 
@@ -227,7 +228,7 @@ const IntelligenceFeed = () => {
                 </div>
 
                 {/* Mobile Session Metrics */}
-                <ActiveSessionPanel logLines={logLines} isLive={isLive} onClear={clearTerminal} />
+                <ActiveSessionPanel logLines={logLines} isLive={isLive} onClear={clearTerminal} serviceMode={serviceMode} setServiceMode={setServiceMode} />
             </div>
 
             {/* ── MOBILE FULLSCREEN SLIDE-IN MODAL */}
@@ -327,73 +328,92 @@ const TerminalHeader = ({ isLive, onClear }) => (
 );
 
 // ── Right panel: Active Session Analytics & Routing
-const ActiveSessionPanel = ({ logLines, isLive, onClear }) => (
-    <div className="flex flex-col gap-[10px] md:gap-4 h-full">
-        {/* ACTIVE TRANSLATION ROUTING */}
-        <div className="bg-surface-container border border-outline-variant/20 p-4 md:p-6 font-['JetBrains_Mono'] relative overflow-hidden group shrink-0">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors pointer-events-none" />
-            <div className="relative z-10 flex items-center gap-2 mb-4">
-                <span className="material-symbols-outlined text-primary text-sm">swap_horiz</span>
-                <span className="text-[10px] font-black uppercase text-on-surface tracking-widest">TRANSLATION ROUTING MATRIX</span>
+const ActiveSessionPanel = ({ logLines, isLive, onClear, serviceMode, setServiceMode }) => {
+    const MODES = [
+        { id: 'LIVE_ANSWERS', icon: 'chat', label: 'LIVE AI ANSWERS', desc: 'Real-time Q&A via Ext.' },
+        { id: 'LIVE_TRANSCRIPTION', icon: 'closed_caption', label: 'LIVE TRANSCRIPTION', desc: 'Real-time text feed' },
+        { id: 'FILE_ANSWERS', icon: 'audio_file', label: 'FILE AI ANSWERS', desc: 'Upload audio for Q&A' },
+        { id: 'FILE_TRANSCRIPTION', icon: 'description', label: 'FILE TRANSCRIPTION', desc: 'Upload audio to text' }
+    ];
+
+    return (
+        <div className="flex flex-col gap-[10px] md:gap-4 h-full">
+            {/* SERVICE ROUTING MODE */}
+            <div className="bg-surface-container border border-outline-variant/20 p-3 md:p-5 font-['JetBrains_Mono'] relative overflow-hidden group shrink-0">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors pointer-events-none" />
+                <div className="relative z-10 flex items-center mb-3">
+                    <span className="material-symbols-outlined text-primary text-sm mr-2">settings_suggest</span>
+                    <span className="text-[10px] font-black uppercase text-on-surface tracking-widest">OPERATION PROTOCOL</span>
+                </div>
+
+                <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {MODES.map(mode => {
+                        const isActive = serviceMode === mode.id;
+                        return (
+                            <button
+                                key={mode.id}
+                                onClick={() => setServiceMode && setServiceMode(mode.id)}
+                                className={`flex items-start gap-2.5 p-2.5 border text-left transition-all ${isActive
+                                        ? 'bg-primary/5 border-primary shadow-[0_0_10px_rgba(142,255,113,0.05)]'
+                                        : 'bg-[#030504] border-outline-variant/10 hover:border-primary/40'
+                                    }`}
+                            >
+                                <span className={`material-symbols-outlined text-base mt-0.5 ${isActive ? 'text-primary' : 'text-on-surface-variant/50'}`}>
+                                    {mode.icon}
+                                </span>
+                                <div>
+                                    <div className={`text-[9.5px] font-black uppercase tracking-widest mb-0.5 mt-0.5 ${isActive ? 'text-primary' : 'text-on-surface'}`}>
+                                        {mode.label}
+                                    </div>
+                                    <div className="text-[7.5px] text-on-surface-variant/50 uppercase leading-snug">
+                                        {mode.desc}
+                                    </div>
+                                </div>
+                            </button>
+                        )
+                    })}
+                </div>
             </div>
 
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-3 border border-outline-variant/10 bg-[#030504] p-3 md:p-4 shadow-inner">
-                <div className="w-full md:w-auto">
-                    <div className="text-[9px] text-on-surface-variant/40 uppercase mb-1">SOURCE_AUDIO</div>
-                    <div className="text-sm md:text-base font-bold text-on-surface flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${isLive ? 'bg-tertiary shadow-[0_0_5px_rgba(255,255,255,0.4)] animate-pulse' : 'bg-on-surface-variant/20'}`} />
-                        AUTO-DETECT (ANY)
+            {/* REAL-TIME SESSION METRICS */}
+            <div className="bg-surface-container border border-outline-variant/20 p-4 font-['JetBrains_Mono'] flex-1 min-h-[200px]">
+                <h3 className="text-[10px] font-black uppercase text-on-surface-variant/50 tracking-[0.2em] mb-4 flex items-center gap-2">
+                    LIVE_SESSION_TELEMETRY <Activity size={12} className={isLive ? "text-primary animate-pulse" : "text-outline-variant/50"} />
+                </h3>
+
+                <div className="grid grid-cols-2 gap-3 h-[calc(100%-30px)]">
+                    <div className="border border-outline-variant/10 p-3 bg-[#030504] flex flex-col justify-center transition-colors">
+                        <div className="text-[9px] text-on-surface-variant/40 uppercase mb-2">PACKETS_PROCESSED</div>
+                        <div className={`text-xl md:text-2xl font-bold ${isLive ? 'text-on-surface' : 'text-on-surface-variant/30'}`}>{isLive ? (logLines.length * 14) : 0}</div>
+                    </div>
+                    <div className="border border-outline-variant/10 p-3 bg-[#030504] flex flex-col justify-center transition-colors">
+                        <div className="text-[9px] text-on-surface-variant/40 uppercase mb-2">ACTIVE_LATENCY</div>
+                        <div className={`text-xl md:text-2xl font-bold ${isLive ? 'text-tertiary shadow-sm' : 'text-on-surface-variant/30'}`}>{isLive ? '14ms' : '---'}</div>
+                    </div>
+                    <div className="border border-outline-variant/10 p-3 bg-[#030504] flex flex-col justify-center transition-colors">
+                        <div className="text-[9px] text-on-surface-variant/40 uppercase mb-2">NOISE_FLOOR</div>
+                        <div className={`text-xl md:text-2xl font-bold ${isLive ? 'text-primary' : 'text-on-surface-variant/30'}`}>{isLive ? '-45dB' : 'IDLE'}</div>
+                    </div>
+                    <div className="border border-outline-variant/10 p-3 bg-[#030504] flex flex-col justify-center transition-colors">
+                        <div className="text-[9px] text-on-surface-variant/40 uppercase mb-2">VAD_CONFIDENCE</div>
+                        <div className={`text-xl md:text-2xl font-bold ${isLive ? 'text-on-surface' : 'text-on-surface-variant/30'}`}>{isLive ? '99.4%' : '0.0%'}</div>
                     </div>
                 </div>
-                <span className="material-symbols-outlined text-outline-variant/50 hidden md:block rotate-90 md:rotate-0">arrow_right_alt</span>
-                <div className="relative w-full md:w-auto text-left md:text-right border-t md:border-t-0 md:border-l border-outline-variant/10 pt-2 md:pt-0 md:pl-4">
-                    <div className="text-[9px] text-on-surface-variant/40 uppercase mb-1 md:text-right">TARGET_OUTPUT</div>
-                    <div className="text-sm md:text-base font-bold text-primary flex items-center justify-start md:justify-end gap-2">
-                        ENGLISH (US)
-                        <span className={`w-2 h-2 rounded-full ${isLive ? 'bg-primary shadow-[0_0_5px_rgba(142,255,113,0.4)]' : 'bg-on-surface-variant/20'}`} />
-                    </div>
-                </div>
+            </div>
+
+            {/* QUICK CONTROLS */}
+            <div className="grid grid-cols-2 gap-2 shrink-0">
+                <button className="flex items-center justify-center gap-2 py-3 border border-outline-variant/20 text-on-surface-variant text-[10px] font-black uppercase tracking-widest hover:text-primary hover:border-primary/50 transition-all bg-[#0a0f0d] active:scale-[0.98] group">
+                    <span className="material-symbols-outlined text-sm group-hover:-translate-y-0.5 transition-transform">download</span>
+                    EXPORT_LOG
+                </button>
+                <button onClick={onClear} className="flex items-center justify-center gap-2 py-3 border border-outline-variant/20 text-on-surface-variant text-[10px] font-black uppercase tracking-widest hover:text-red-400 hover:border-red-400/50 transition-all bg-[#0a0f0d] active:scale-[0.98] group">
+                    <span className="material-symbols-outlined text-sm group-hover:rotate-12 transition-transform">delete</span>
+                    PURGE_CACHE
+                </button>
             </div>
         </div>
-
-        {/* REAL-TIME SESSION METRICS */}
-        <div className="bg-surface-container border border-outline-variant/20 p-4 font-['JetBrains_Mono'] flex-1 min-h-[200px]">
-            <h3 className="text-[10px] font-black uppercase text-on-surface-variant/50 tracking-[0.2em] mb-4 flex items-center gap-2">
-                LIVE_SESSION_TELEMETRY <Activity size={12} className={isLive ? "text-primary animate-pulse" : "text-outline-variant/50"} />
-            </h3>
-
-            <div className="grid grid-cols-2 gap-3 h-[calc(100%-30px)]">
-                <div className="border border-outline-variant/10 p-3 bg-[#030504] flex flex-col justify-center transition-colors">
-                    <div className="text-[9px] text-on-surface-variant/40 uppercase mb-2">PACKETS_PROCESSED</div>
-                    <div className={`text-xl md:text-2xl font-bold ${isLive ? 'text-on-surface' : 'text-on-surface-variant/30'}`}>{isLive ? (logLines.length * 14) : 0}</div>
-                </div>
-                <div className="border border-outline-variant/10 p-3 bg-[#030504] flex flex-col justify-center transition-colors">
-                    <div className="text-[9px] text-on-surface-variant/40 uppercase mb-2">ACTIVE_LATENCY</div>
-                    <div className={`text-xl md:text-2xl font-bold ${isLive ? 'text-tertiary shadow-sm' : 'text-on-surface-variant/30'}`}>{isLive ? '14ms' : '---'}</div>
-                </div>
-                <div className="border border-outline-variant/10 p-3 bg-[#030504] flex flex-col justify-center transition-colors">
-                    <div className="text-[9px] text-on-surface-variant/40 uppercase mb-2">NOISE_FLOOR</div>
-                    <div className={`text-xl md:text-2xl font-bold ${isLive ? 'text-primary' : 'text-on-surface-variant/30'}`}>{isLive ? '-45dB' : 'IDLE'}</div>
-                </div>
-                <div className="border border-outline-variant/10 p-3 bg-[#030504] flex flex-col justify-center transition-colors">
-                    <div className="text-[9px] text-on-surface-variant/40 uppercase mb-2">VAD_CONFIDENCE</div>
-                    <div className={`text-xl md:text-2xl font-bold ${isLive ? 'text-on-surface' : 'text-on-surface-variant/30'}`}>{isLive ? '99.4%' : '0.0%'}</div>
-                </div>
-            </div>
-        </div>
-
-        {/* QUICK CONTROLS */}
-        <div className="grid grid-cols-2 gap-2 shrink-0">
-            <button className="flex items-center justify-center gap-2 py-3 border border-outline-variant/20 text-on-surface-variant text-[10px] font-black uppercase tracking-widest hover:text-primary hover:border-primary/50 transition-all bg-[#0a0f0d] active:scale-[0.98] group">
-                <span className="material-symbols-outlined text-sm group-hover:-translate-y-0.5 transition-transform">download</span>
-                EXPORT_LOG
-            </button>
-            <button onClick={onClear} className="flex items-center justify-center gap-2 py-3 border border-outline-variant/20 text-on-surface-variant text-[10px] font-black uppercase tracking-widest hover:text-red-400 hover:border-red-400/50 transition-all bg-[#0a0f0d] active:scale-[0.98] group">
-                <span className="material-symbols-outlined text-sm group-hover:rotate-12 transition-transform">delete</span>
-                PURGE_CACHE
-            </button>
-        </div>
-    </div>
-);
+    );
+};
 
 export default IntelligenceFeed;
