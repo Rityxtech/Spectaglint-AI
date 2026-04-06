@@ -423,26 +423,26 @@ const ActiveSessionPanel = ({ logLines, isLive, onClear, serviceMode, setService
             </div>
 
             {/* REAL-TIME SESSION METRICS */}
-            <div className="bg-surface-container border border-outline-variant/20 p-4 font-['JetBrains_Mono'] flex-1 min-h-[200px]">
-                <h3 className="text-[10px] font-black uppercase text-on-surface-variant/50 tracking-[0.2em] mb-4 flex items-center gap-2">
+            <div className="bg-surface-container border border-outline-variant/20 p-3 md:p-4 font-['JetBrains_Mono'] flex-1 min-h-[140px] md:min-h-[200px]">
+                <h3 className="text-[10px] font-black uppercase text-on-surface-variant/50 tracking-[0.2em] mb-2 md:mb-4 flex items-center gap-2">
                     LIVE_SESSION_TELEMETRY <Activity size={12} className={isLive ? "text-primary animate-pulse" : "text-outline-variant/50"} />
                 </h3>
 
-                <div className="grid grid-cols-2 gap-3 h-[calc(100%-30px)]">
-                    <div className="border border-outline-variant/10 p-3 bg-[#030504] flex flex-col justify-center transition-colors">
-                        <div className="text-[9px] text-on-surface-variant/40 uppercase mb-2">PACKETS_PROCESSED</div>
+                <div className="grid grid-cols-2 gap-2 md:gap-3 h-[calc(100%-24px)] md:h-[calc(100%-30px)]">
+                    <div className="border border-outline-variant/10 p-2 md:p-3 bg-[#030504] flex flex-col justify-center transition-colors">
+                        <div className="text-[9px] text-on-surface-variant/40 uppercase mb-1 md:mb-2">PACKETS_PROCESSED</div>
                         <div className={`text-xl md:text-2xl font-bold ${isLive ? 'text-on-surface' : 'text-on-surface-variant/30'}`}>{isLive ? (logLines.length * 14) : 0}</div>
                     </div>
-                    <div className="border border-outline-variant/10 p-3 bg-[#030504] flex flex-col justify-center transition-colors">
-                        <div className="text-[9px] text-on-surface-variant/40 uppercase mb-2">ACTIVE_LATENCY</div>
+                    <div className="border border-outline-variant/10 p-2 md:p-3 bg-[#030504] flex flex-col justify-center transition-colors">
+                        <div className="text-[9px] text-on-surface-variant/40 uppercase mb-1 md:mb-2">ACTIVE_LATENCY</div>
                         <div className={`text-xl md:text-2xl font-bold ${isLive ? 'text-tertiary shadow-sm' : 'text-on-surface-variant/30'}`}>{isLive ? '14ms' : '---'}</div>
                     </div>
-                    <div className="border border-outline-variant/10 p-3 bg-[#030504] flex flex-col justify-center transition-colors">
-                        <div className="text-[9px] text-on-surface-variant/40 uppercase mb-2">NOISE_FLOOR</div>
+                    <div className="border border-outline-variant/10 p-2 md:p-3 bg-[#030504] flex flex-col justify-center transition-colors">
+                        <div className="text-[9px] text-on-surface-variant/40 uppercase mb-1 md:mb-2">NOISE_FLOOR</div>
                         <div className={`text-xl md:text-2xl font-bold ${isLive ? 'text-primary' : 'text-on-surface-variant/30'}`}>{isLive ? '-45dB' : 'IDLE'}</div>
                     </div>
-                    <div className="border border-outline-variant/10 p-3 bg-[#030504] flex flex-col justify-center transition-colors">
-                        <div className="text-[9px] text-on-surface-variant/40 uppercase mb-2">VAD_CONFIDENCE</div>
+                    <div className="border border-outline-variant/10 p-2 md:p-3 bg-[#030504] flex flex-col justify-center transition-colors">
+                        <div className="text-[9px] text-on-surface-variant/40 uppercase mb-1 md:mb-2">VAD_CONFIDENCE</div>
                         <div className={`text-xl md:text-2xl font-bold ${isLive ? 'text-on-surface' : 'text-on-surface-variant/30'}`}>{isLive ? '99.4%' : '0.0%'}</div>
                     </div>
                 </div>
