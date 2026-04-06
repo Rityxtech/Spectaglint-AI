@@ -208,21 +208,19 @@ const IntelligenceFeed = () => {
             {/* ── STATUS BANNER */}
             <div className={`flex items-center justify-between px-3 md:px-4 py-2 md:py-2.5 border font-['JetBrains_Mono'] text-[9px] md:text-[10px] uppercase tracking-widest transition-all duration-500 ${isLive
                 ? 'bg-primary/5 border-primary/40 text-primary'
-                : extStatus === 'STOPPED'
-                    ? 'bg-red-900/5 border-red-800/30 text-red-400'
-                    : 'bg-surface-container border-outline-variant/20 text-on-surface-variant/50'
+                : 'bg-red-900/10 border-red-800/40 text-red-400'
                 }`}>
                 <div className="flex items-center gap-2">
                     <span
                         className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full shrink-0"
                         style={{
-                            backgroundColor: isLive ? '#8eff71' : extStatus === 'STOPPED' ? '#ef4444' : '#475569',
-                            boxShadow: isLive ? '0 0 8px rgba(142,255,113,0.8)' : 'none',
-                            animation: isLive ? 'pulse 1.5s infinite' : 'none'
+                            backgroundColor: isLive ? '#8eff71' : '#ef4444',
+                            boxShadow: isLive ? '0 0 8px rgba(142,255,113,0.8)' : '0 0 8px rgba(239,68,68,0.5)',
+                            animation: isLive ? 'pulse 1.5s infinite' : 'pulse 2s infinite'
                         }}
                     />
                     <span className="truncate hidden sm:inline">
-                        {isLive ? '● ENGINE ACTIVE — CAPTURING' : extStatus === 'STOPPED' ? '■ SESSION ENDED' : '○ ENGINE OFFLINE'}
+                        {isLive ? '● ENGINE ACTIVE — CAPTURING' : '■ ENGINE OFFLINE — ACTIVATE TO BEGIN'}
                     </span>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
