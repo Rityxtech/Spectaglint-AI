@@ -29,6 +29,12 @@ router.get('/', async (req, res) => {
     res.json({ meetings, total: parseInt(countRows[0].count), page: parseInt(page), limit: parseInt(limit) });
 });
 
+// GET /meetings/stats
+router.get('/stats', async (req, res) => {
+    const { rows: [{ count }] } = await query('SELECT COUNT(*) FROM meetings WHERE user_id = $1', [req.user.id]);
+    res.json({ total_meetings: parseInt(count) });
+});
+
 // GET /meetings/:id
 router.get('/:id', async (req, res) => {
     const { rows: [meeting] } = await query(

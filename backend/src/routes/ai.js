@@ -98,4 +98,10 @@ router.get('/responses', async (req, res) => {
     }
 });
 
+// GET /ai/stats
+router.get('/stats', async (req, res) => {
+    const { rows: [{ count }] } = await query('SELECT COUNT(*) FROM ai_responses WHERE user_id = $1', [req.user.id]);
+    res.json({ total_questions: parseInt(count) });
+});
+
 module.exports = router;

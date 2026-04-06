@@ -65,4 +65,8 @@ export const api = {
 
     // AI Responses Feed
     getAIResponses: (page = 1, limit = 50) => apiFetch(`/ai/responses?page=${page}&limit=${limit}`),
+    getAIStats: () => apiFetch('/ai/stats'),
+
+    // Dashboard Stats
+    getMeetingStats: () => apiFetch('/meetings/stats'),
 };

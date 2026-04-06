@@ -2,14 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 
-/* ── Mock data ── */
-const MEETINGS = [
-    { date: 'OCT 24, 2023', time: '14:20 GMT', title: 'PROJECT DELTA SPRINT REVIEW', duration: '45M 12S', participants: 12, active: true },
-    { date: 'OCT 23, 2023', time: '09:15 GMT', title: 'GLOBAL INFRASTRUCTURE SYNC', duration: '1H 05M', participants: 8, active: true },
-    { date: 'OCT 21, 2023', time: '16:45 GMT', title: 'ARCHITECTURE DEEP DIVE (PART 2)', duration: '38M 29S', participants: 4, active: false },
-    { date: 'OCT 20, 2023', time: '11:00 GMT', title: 'SECURITY AUDIT PREP', duration: '2H 30M', participants: 6, active: false },
-    { date: 'OCT 19, 2023', time: '13:30 GMT', title: 'UI/UX REVIEW SESSION', duration: '1H 15M', participants: 5, active: false },
-];
+import { api } from '../lib/api';
 
 /* ── Animated counter hook ── */
 function useCounter(target, duration = 1200) {
@@ -65,19 +58,120 @@ function useExtensionStatus() {
     DASHBOARD PAGE
 ══════════════════════════════════════════ */
 const Dashboard = () => {
-    const meetingsCount = useCounter(124);
-    const questionsCount = useCounter(890);
-    const coinsCount = useCounter(450);
+    const [stats, setStats] = useState({
+        totalMeetings: 0,
+        totalQuestions: 0,
+        coinsRemaining: 0
+    });
+    const [meetings, setMeetings] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const extensionOnline = useExtensionStatus();
     const [filter, setFilter] = useState('all');
     const [showMobileFilter, setShowMobileFilter] = useState(false);
 
-    const filteredMeetings = MEETINGS.filter(m => {
+    // Use counters for animation
+    const meetingsCount = useCounter(stats.totalMeetings);
+    const questionsCount = useCounter(stats.totalQuestions);
+    const coinsCount = useCounter(stats.coinsRemaining);
+
+    const filteredMeetings = meetings.filter(m => {
         if (filter === 'all') return true;
-        if (filter === 'active') return m.active;
-        if (filter === 'inactive') return !m.active;
+        if (filter === 'active') return m.status === 'active';
+        if (filter === 'inactive') return m.status !== 'active';
         return true;
     });
+
+    useEffect(() => {
+        loadDashboardData();
+        // Set up polling for live updates every 30 seconds
+        const interval = setInterval(loadDashboardData, 30000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const loadDashboardData = async () => {
+        try {
+            setError(null);
+            const [meetingStats, aiStats, walletData, meetingsData] = await Promise.all([
+                api.getMeetingStats(),
+                api.getAIStats(),
+                api.getWallet(),
+                api.getMeetings(1, 10) // Get first 10 meetings for recent activity
+            ]);
+
+            setStats({
+                totalMeetings: meetingStats.total_meetings,
+                totalQuestions: aiStats.total_questions,
+                coinsRemaining: walletData.wallet.balance
+            });
+
+            setMeetings(meetingsData.meetings.map(m => ({
+                date: new Date(m.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }).toUpperCase(),
+                time: new Date(m.created_at).toLocaleTimeString('en-US', { hour12: false, timeZone: 'GMT' }).slice(0, -3) + ' GMT',
+                title: m.title.toUpperCase(),
+                duration: formatDuration(m.duration_seconds),
+                participants: m.participant_count || 0,
+                active: m.status === 'active'
+            })));
+        } catch (err) {
+            console.error('Failed to load dashboard data:', err);
+            setError('Failed to load dashboard data');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const formatDuration = (seconds) => {
+        if (!seconds) return '0M 0S';
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        if (hours > 0) return `${hours}H ${minutes}M`;
+        return `${minutes}M ${secs}S`;
+    };
+
+    if (loading) {
+        return (
+            <div className="w-full pb-0 space-y-[10px] md:space-y-8">
+                <PageHeader
+                    title="TERMINAL_CONTROL"
+                    label="SYSTEM // OVERVIEW"
+                    description="Aggregated neural telemetry and session health metrics. Monitor global meeting activity and system-wide coin distribution from this command hub."
+                    mobileDescription="Monitor global meeting activity and system-wide coin distribution from this command hub."
+                />
+                <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                        <p className="text-on-surface-variant/60 text-sm">LOADING_DASHBOARD_DATA...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="w-full pb-0 space-y-[10px] md:space-y-8">
+                <PageHeader
+                    title="TERMINAL_CONTROL"
+                    label="SYSTEM // OVERVIEW"
+                    description="Aggregated neural telemetry and session health metrics. Monitor global meeting activity and system-wide coin distribution from this command hub."
+                    mobileDescription="Monitor global meeting activity and system-wide coin distribution from this command hub."
+                />
+                <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                        <div className="text-red-400 text-sm mb-4">{error}</div>
+                        <button
+                            onClick={loadDashboardData}
+                            className="px-4 py-2 bg-primary text-black text-sm font-black uppercase tracking-widest hover:bg-primary-dim transition-colors"
+                        >
+                            RETRY
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="w-full pb-0 space-y-[10px] md:space-y-8">
