@@ -58,7 +58,7 @@ function useExtensionStatus() {
         fetchExtensionInstallInfo();
     }, []);
 
-    const fetchExtensionInstallInfo = async () => {
+    async function fetchExtensionInstallInfo() {
         try {
             const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://spectaglint-ai-production.up.railway.app'}/extension/install-info`);
             if (response.ok) {
@@ -83,6 +83,14 @@ function useExtensionStatus() {
     DASHBOARD PAGE
 ═════════════════════════════════════════ */
 const Dashboard = () => {
+    const [stats, setStats] = useState({
+        totalMeetings: 0,
+        totalQuestions: 0,
+        coinsRemaining: 0
+    });
+    const [meetings, setMeetings] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const { connected: extensionOnline, downloadExtension } = useExtensionStatus();
     const [filter, setFilter] = useState('all');
     const [showMobileFilter, setShowMobileFilter] = useState(false);

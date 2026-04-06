@@ -86,6 +86,9 @@ app.use('/wallet/webhook', express.raw({ type: 'application/json' }), walletRout
 // ── Global Rate Limit ─────────────────────────────────────
 app.use(standard);
 
+// ── Public & Extension Routes ─────────────────────────────
+app.use('/extension', require('./routes/extension'));
+
 // ── Auth Guard (all routes below require valid JWT) ───────
 app.use(authenticate);
 
