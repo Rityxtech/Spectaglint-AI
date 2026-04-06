@@ -1,4 +1,5 @@
 const Groq = require('groq-sdk');
+const fs = require('fs');
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -38,4 +39,44 @@ const getAIAnswer = async (question, systemPrompt, model = 'llama3-8b-8192') => 
     return { answer, responseTimeMs, model };
 };
 
-module.exports = { getAIAnswer, COST_PER_QUERY };
+/**
+ * Transcribes an audio payload directly using Groq Whisper.
+ * @param {string} filePath - Path to the temporarily uploaded audio manifest
+ * @returns {string} Raw transcribed text
+ */
+const transcribeAudio = async (filePath) => {
+    const translation = await groq.audio.transcriptions.create({
+        file: fs.createReadStream(filePath),
+        model: "whisper-large-v3",
+        response_format: "verbose_json"
+    });
+    return translation.text || "";
+};
+
+/**
+ * Sweeps a bulk transcription block and extracts Q&A pairs via Groq LLM.
+ * @param {string} transcriptText - Raw text block
+ * @returns {string} Markdown formatted extraction
+ */
+const analyzeBulkTranscript = async (transcriptText) => {
+    const completion = await groq.chat.completions.create({
+        messages: [
+            {
+                role: 'system',
+                content: 'Analyze the following meeting transcript. Extract the core technical problems raised and provide direct, actionable answers to them. Format as a clean markdown list using bullet points.'
+            },
+            {
+                role: 'user',
+                content: transcriptText
+            }
+        ],
+        model: 'llama3-8b-8192',
+        temperature: 0.3,
+        max_tokens: 2048,
+        stream: false
+    });
+
+    return completion.choices[0]?.message?.content?.trim() || 'No clear questions or actionable contexts detected in timeline.';
+};
+
+module.exports = { getAIAnswer, COST_PER_QUERY, transcribeAudio, analyzeBulkTranscript };

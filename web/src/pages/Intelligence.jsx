@@ -18,6 +18,13 @@ const IntelligenceFeed = () => {
     const [serviceMode, setServiceMode] = useState('LIVE_ANSWERS');
     const [extStatus, setExtStatus] = useState('IDLE'); // 'IDLE' | 'LIVE' | 'STOPPED'
     const [actionToast, setActionToast] = useState({ open: false, type: 'success', title: '', desc: '' });
+
+    // File upload states
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [uploadFileName, setUploadFileName] = useState('');
+    const fileInputRef = useRef(null);
+
     const terminalRef = useRef(null);
     const mobileTerminalRef = useRef(null);
 
@@ -173,9 +180,67 @@ const IntelligenceFeed = () => {
     const handleToggle = (e) => {
         const turningOn = e.target.checked;
         if (turningOn) {
-            window.postMessage({ type: 'START_EAR' }, '*');
+            window.postMessage({ type: 'START_EAR', payload: { protocol: serviceMode } }, '*');
         } else {
             window.postMessage({ type: 'STOP_EAR' }, '*');
+        }
+    };
+
+    const handleFileSelect = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 24 * 1024 * 1024) {
+            setActionToast({ open: true, type: 'error', title: 'FILE TOO LARGE', desc: 'Please select an audio file under 24MB for Groq processing.' });
+            return;
+        }
+
+        setUploadFileName(file.name);
+        setIsUploading(true);
+        setUploadProgress(15);
+
+        try {
+            const { supabase } = await import('../lib/supabase');
+            const { data: { session } } = await supabase.auth.getSession();
+
+            const formData = new FormData();
+            formData.append('audioFile', file);
+            formData.append('mode', serviceMode);
+
+            const backendUrl = import.meta.env.VITE_API_URL || 'https://spectaglint-ai-production.up.railway.app';
+
+            setUploadProgress(40);
+
+            const response = await fetch(`${backendUrl}/process/audio`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${session?.access_token}`
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            setUploadProgress(100);
+            setIsUploading(false);
+
+            if (!response.ok) throw new Error(data.message || 'Data processing failed');
+
+            // Render the blocks directly to the terminal!
+            const newLines = data.blocks.map(b => ({ id: Date.now() + Math.random(), html: b.html }));
+            setLogLines(prev => [...prev, ...newLines]);
+
+            setActionToast({ open: true, type: 'success', title: 'PROCESSING COMPLETE', desc: 'Audio payload fully rendered to terminal interface.' });
+
+            // Wipe file input 
+            if (fileInputRef.current) fileInputRef.current.value = '';
+
+        } catch (err) {
+            console.error(err);
+            setIsUploading(false);
+            setUploadProgress(0);
+            setActionToast({ open: true, type: 'error', title: 'PROCESSING FAILED', desc: err.message });
+            if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
 
@@ -253,34 +318,54 @@ const IntelligenceFeed = () => {
 
             return (
                 <div ref={scrollRef} className={`overflow-y-auto p-3 md:p-4 flex flex-col font-['JetBrains_Mono'] text-xs ${className}`} style={height ? { height } : undefined}>
-                    <div className={`flex-1 flex flex-col items-center justify-center min-h-[140px] md:min-h-[250px] border-2 border-dashed border-outline-variant/20 ${themeBorderHover} ${themeBgHover} transition-all cursor-pointer group p-4 md:p-8 text-center rounded-sm`}>
-                        <span className={`material-symbols-outlined text-3xl md:text-5xl mb-2 md:mb-4 transition-transform group-hover:-translate-y-1 ${themeText}`}>
-                            {isTranscription ? 'description' : 'neurology'}
-                        </span>
-                        <div className={`text-[11px] md:text-sm font-black uppercase tracking-widest mb-1 md:mb-2 ${themeText}`}>
-                            UPLOAD AUDIO MANIFEST
-                        </div>
-                        <div className="text-[8px] md:text-[10px] text-on-surface-variant/50 tracking-wider mb-3 md:mb-6 max-w-[280px]">
-                            Drop your recorded {isTranscription ? 'audio file for bulk high-fidelity transcription' : 'meeting here to automatically extract Q&A insights'} or click to browse.
-                        </div>
-                        <button className={`px-4 md:px-5 py-2 md:py-2.5 bg-transparent border text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-colors ${themeButtonClasses}`}>
-                            SELECT LOCAL FILE
-                        </button>
-                        <div className="text-[7px] md:text-[8px] text-on-surface-variant/30 mt-2 md:mt-4 uppercase tracking-widest">
-                            SUPPORTED FORMATS: .MP3, .WAV, .M4A
-                        </div>
-                    </div>
-                    {/* Progress area placeholder */}
-                    <div className="mt-2 md:mt-4 p-2.5 md:p-4 border border-outline-variant/10 bg-[#0a0f0d] flex items-center justify-between opacity-50 grayscale pointer-events-none">
-                        <div className="flex items-center gap-2 md:gap-3">
-                            <span className="material-symbols-outlined text-[16px] md:text-[24px] text-on-surface-variant">audio_file</span>
-                            <div>
-                                <div className="text-[9px] md:text-[10px] text-on-surface font-bold uppercase tracking-widest">AWAITING_UPLOAD.WAV</div>
-                                <div className="text-[7px] md:text-[8px] text-on-surface-variant/50 uppercase">0 MB / 0 MB</div>
+                    <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="audio/*" className="hidden" />
+
+                    {!isUploading && (
+                        <div onClick={() => fileInputRef.current?.click()} className={`flex-1 flex flex-col items-center justify-center min-h-[140px] md:min-h-[250px] border-2 border-dashed border-outline-variant/20 ${themeBorderHover} ${themeBgHover} transition-all cursor-pointer group p-4 md:p-8 text-center rounded-sm`}>
+                            <span className={`material-symbols-outlined text-3xl md:text-5xl mb-2 md:mb-4 transition-transform group-hover:-translate-y-1 ${themeText}`}>
+                                {isTranscription ? 'description' : 'neurology'}
+                            </span>
+                            <div className={`text-[11px] md:text-sm font-black uppercase tracking-widest mb-1 md:mb-2 ${themeText}`}>
+                                UPLOAD AUDIO MANIFEST
+                            </div>
+                            <div className="text-[8px] md:text-[10px] text-on-surface-variant/50 tracking-wider mb-3 md:mb-6 max-w-[280px]">
+                                Drop your recorded {isTranscription ? 'audio file for bulk high-fidelity transcription' : 'meeting here to automatically extract Q&A insights'} or click to browse.
+                            </div>
+                            <button className={`px-4 md:px-5 py-2 md:py-2.5 bg-transparent border text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-colors ${themeButtonClasses}`}>
+                                SELECT LOCAL FILE
+                            </button>
+                            <div className="text-[7px] md:text-[8px] text-on-surface-variant/30 mt-2 md:mt-4 uppercase tracking-widest">
+                                SUPPORTED FORMATS: .MP3, .WAV, .M4A
                             </div>
                         </div>
-                        <div className="text-[8px] md:text-[9px] text-on-surface-variant/40">STANDBY</div>
-                    </div>
+                    )}
+
+                    {/* Progress area */}
+                    {isUploading && (
+                        <div className="flex-1 flex flex-col items-center justify-center animate-pulse min-h-[140px] md:min-h-[250px] border border-outline-variant/20 p-4 md:p-8 bg-[#0a0f0d]">
+                            <span className={`material-symbols-outlined text-3xl md:text-5xl mb-3 md:mb-4 animate-spin ${themeText}`}>autorenew</span>
+                            <div className="text-[10px] md:text-[12px] text-on-surface font-black uppercase tracking-widest mb-1">
+                                PROCESSING SECURE PAYLOAD...
+                            </div>
+                            <div className="text-[8px] md:text-[9px] text-on-surface-variant/50 tracking-widest uppercase text-center max-w-[250px]">
+                                Uploading and decoding structural audio data. Please keep window open.
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Standby Card placeholder */}
+                    {!isUploading && logLines.length === 0 && (
+                        <div className="mt-2 md:mt-4 p-2.5 md:p-4 border border-outline-variant/10 bg-[#0a0f0d] flex items-center justify-between opacity-50 grayscale pointer-events-none">
+                            <div className="flex items-center gap-2 md:gap-3">
+                                <span className="material-symbols-outlined text-[16px] md:text-[24px] text-on-surface-variant">audio_file</span>
+                                <div>
+                                    <div className="text-[9px] md:text-[10px] text-on-surface font-bold uppercase tracking-widest">AWAITING_UPLOAD.WAV</div>
+                                    <div className="text-[7px] md:text-[8px] text-on-surface-variant/50 uppercase">0 MB / 0 MB</div>
+                                </div>
+                            </div>
+                            <div className="text-[8px] md:text-[9px] text-on-surface-variant/40">STANDBY</div>
+                        </div>
+                    )}
                 </div>
             );
         }

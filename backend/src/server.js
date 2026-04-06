@@ -104,6 +104,7 @@ app.use('/ai', aiEndpoint, require('./routes/ai'));
 app.use('/wallet', walletRouter);
 app.use('/config', require('./routes/config'));
 app.use('/live', require('./routes/live')); // SSE & Audio Uploads
+app.use('/process', require('./routes/process'));
 
 // ── 404 Handler ───────────────────────────────────────────
 app.use((req, res) => {
