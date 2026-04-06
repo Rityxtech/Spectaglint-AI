@@ -39,6 +39,9 @@ const BarChart = () => {
 /* ── Extension connection status ── */
 function useExtensionStatus() {
     const [connected, setConnected] = useState(false);
+    const [installUrl, setInstallUrl] = useState('');
+    const [installInstructions, setInstallInstructions] = useState([]);
+
     useEffect(() => {
         // Attempt to communicate with extension via postMessage / window check
         // In production this would use chrome.runtime.sendMessage
@@ -50,23 +53,40 @@ function useExtensionStatus() {
         } catch {
             setConnected(false);
         }
+
+        // Fetch extension install info
+        fetchExtensionInstallInfo();
     }, []);
-    return connected;
+
+    const fetchExtensionInstallInfo = async () => {
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://spectaglint-ai-production.up.railway.app'}/extension/install-info`);
+            if (response.ok) {
+                const data = await response.json();
+                setInstallUrl(data.downloadUrl);
+                setInstallInstructions(data.instructions);
+            }
+        } catch (err) {
+            console.error('Failed to fetch extension install info:', err);
+        }
+    };
+
+    const downloadExtension = () => {
+        // Redirect to the dedicated installation page
+        window.location.href = '/install-extension';
+    };
+
+    return { connected, downloadExtension };
 }
 
 /* ══════════════════════════════════════════
     DASHBOARD PAGE
-══════════════════════════════════════════ */
+═════════════════════════════════════════ */
 const Dashboard = () => {
-    const [stats, setStats] = useState({
-        totalMeetings: 0,
-        totalQuestions: 0,
-        coinsRemaining: 0
-    });
-    const [meetings, setMeetings] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const extensionOnline = useExtensionStatus();
+    const meetingsCount = useCounter(stats.totalMeetings);
+    const questionsCount = useCounter(stats.totalQuestions);
+    const coinsCount = useCounter(stats.coinsRemaining);
+    const { connected: extensionOnline, downloadExtension } = useExtensionStatus();
     const [filter, setFilter] = useState('all');
     const [showMobileFilter, setShowMobileFilter] = useState(false);
 
@@ -434,13 +454,13 @@ const Dashboard = () => {
             </div>
 
             {/* ── PROTOCOL STATUS BANNER ── */}
-            <ExtensionStatusBanner connected={extensionOnline} />
+            <ExtensionStatusBanner connected={extensionOnline} onInstall={downloadExtension} />
         </div>
     );
 };
 
 /* ── Extension Status Banner ── */
-const ExtensionStatusBanner = ({ connected }) => {
+const ExtensionStatusBanner = ({ connected, onInstall }) => {
     const [isLive, setIsLive] = useState(false);
 
     useEffect(() => {
@@ -523,7 +543,10 @@ const ExtensionStatusBanner = ({ connected }) => {
             </div>
 
             {!connected && (
-                <button className="shrink-0 px-4 md:px-5 py-2 md:py-2.5 bg-primary text-on-primary font-['Inter'] font-black uppercase text-[10px] md:text-[11px] tracking-widest hover:bg-primary-dim transition-colors glow-primary flex items-center gap-2">
+                <button
+                    onClick={onInstall}
+                    className="shrink-0 px-4 md:px-5 py-2 md:py-2.5 bg-primary text-on-primary font-['Inter'] font-black uppercase text-[10px] md:text-[11px] tracking-widest hover:bg-primary-dim transition-colors glow-primary flex items-center gap-2"
+                >
                     <span className="material-symbols-outlined text-sm">download</span>
                     INSTALL EXTENSION
                 </button>

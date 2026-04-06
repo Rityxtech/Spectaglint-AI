@@ -10,6 +10,7 @@ import Config from './pages/Config';
 import Settings from './pages/Settings';
 import Wallet from './pages/Wallet';
 import Profile from './pages/Profile';
+import ExtensionInstall from './pages/ExtensionInstall';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Auth />} />
         <Route path="/register" element={<Auth />} />
+        <Route path="/install-extension" element={<ExtensionInstall />} />
 
         {/* Dashboard routes protected by guard */}
         <Route element={<ProtectedRoute />}>

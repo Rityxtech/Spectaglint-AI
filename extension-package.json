@@ -1,0 +1,13 @@
+{
+  "name": "spectaglint-extension",
+  "version": "1.0.0",
+  "description": "Spectaglint AI Companion Extension",
+  "scripts": {
+    "build": "node build-extension.js",
+    "dev": "npm run build && echo 'Extension built. Load the spectaglint-extension.zip file in chrome://extensions/'"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "archiver": "^7.0.1"
+  }
+}

@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { query } = require('../lib/db');
+const path = require('path');
+const fs = require('fs');
 
 /**
  * POST /extension/push
@@ -54,6 +56,50 @@ router.post('/push', async (req, res) => {
         console.error('[Extension Push] Error:', err.message);
         res.status(500).json({ error: err.message });
     }
+});
+
+// Serve extension ZIP file for download
+router.get('/download', (req, res) => {
+  const extensionPath = path.join(__dirname, '../../../spectaglint-extension.zip');
+
+  // Check if extension file exists
+  if (!fs.existsSync(extensionPath)) {
+    return res.status(404).json({
+      error: 'EXTENSION_NOT_BUILT',
+      message: 'Extension package not found. Please run the build script first.'
+    });
+  }
+
+  // Set headers for file download
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', 'attachment; filename="spectaglint-extension.zip"');
+
+  // Stream the file
+  const fileStream = fs.createReadStream(extensionPath);
+  fileStream.pipe(res);
+
+  fileStream.on('error', (err) => {
+    console.error('Error streaming extension file:', err);
+    res.status(500).json({ error: 'FILE_STREAM_ERROR' });
+  });
+});
+
+// Get extension installation instructions
+router.get('/install-info', (req, res) => {
+  res.json({
+    downloadUrl: `${req.protocol}://${req.get('host')}/extension/download`,
+    instructions: [
+      '1. Download the extension ZIP file',
+      '2. Extract the ZIP file to a folder',
+      '3. Open Chrome and go to chrome://extensions/',
+      '4. Enable "Developer mode" (top right toggle)',
+      '5. Click "Load unpacked" button',
+      '6. Select the extracted spectaglint-extension folder',
+      '7. The extension should now be installed and active'
+    ],
+    version: '1.0.0',
+    name: 'Spectaglint AI Companion'
+  });
 });
 
 module.exports = router;
