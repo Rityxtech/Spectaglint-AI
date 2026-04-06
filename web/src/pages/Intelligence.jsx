@@ -120,15 +120,15 @@ const IntelligenceFeed = () => {
     const TerminalContent = ({ scrollRef, height, className = "" }) => {
         if (serviceMode === 'LIVE_ANSWERS') {
             return (
-                <div ref={scrollRef} className={`overflow-y-auto p-4 space-y-1.5 font-['JetBrains_Mono'] text-xs ${className}`} style={height ? { height } : undefined}>
+                <div ref={scrollRef} className={`overflow-y-auto p-3 md:p-4 space-y-1.5 font-['JetBrains_Mono'] text-xs ${className}`} style={height ? { height } : undefined}>
                     {logLines.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center">
-                            <TerminalIcon size={28} className="text-on-surface-variant/15 mb-3" />
-                            <div className="text-[10px] text-on-surface-variant/30 uppercase tracking-widest">
+                        <div className="flex flex-col items-center justify-center h-full min-h-[120px] md:min-h-[200px] text-center">
+                            <TerminalIcon size={24} className="text-on-surface-variant/15 mb-2 md:mb-3 md:w-[28px] md:h-[28px]" />
+                            <div className="text-[9px] md:text-[10px] text-on-surface-variant/30 uppercase tracking-widest px-2">
                                 {isLive ? 'CONNECTED — WAITING FOR AUDIO INPUT...' : 'TERMINAL IDLE — CAPTURE ENGINE OFFLINE'}
                             </div>
                             {isLive && (
-                                <div className="flex items-center gap-1.5 mt-3 text-primary/50 text-[9px]">
+                                <div className="flex items-center gap-1.5 mt-2 md:mt-3 text-primary/50 text-[8px] md:text-[9px]">
                                     <span className="animate-pulse">▋</span> LISTENING...
                                 </div>
                             )}
@@ -149,20 +149,20 @@ const IntelligenceFeed = () => {
 
         if (serviceMode === 'LIVE_TRANSCRIPTION') {
             return (
-                <div ref={scrollRef} className={`overflow-y-auto p-5 font-mono text-xs tracking-wide ${className}`} style={height ? { height } : undefined}>
+                <div ref={scrollRef} className={`overflow-y-auto p-3 md:p-5 font-mono text-xs tracking-wide ${className}`} style={height ? { height } : undefined}>
                     {logLines.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center font-['JetBrains_Mono']">
-                            <span className="material-symbols-outlined text-4xl text-on-surface-variant/15 mb-3">graphic_eq</span>
-                            <div className="text-[10px] text-on-surface-variant/30 uppercase tracking-widest mb-1">
+                        <div className="flex flex-col items-center justify-center h-full min-h-[120px] md:min-h-[200px] text-center font-['JetBrains_Mono']">
+                            <span className="material-symbols-outlined text-3xl md:text-4xl text-on-surface-variant/15 mb-2 md:mb-3">graphic_eq</span>
+                            <div className="text-[9px] md:text-[10px] text-on-surface-variant/30 uppercase tracking-widest md:mb-1 px-2">
                                 {isLive ? 'AWAITING VOCAL CAPTURE STREAM' : 'LIVE TRANSCRIPTION ENGINE OFFLINE'}
                             </div>
-                            <div className="text-[8px] text-on-surface-variant/20 uppercase tracking-widest">CONTINUOUS RAW TEXT OUTPUT</div>
+                            <div className="text-[7px] md:text-[8px] text-on-surface-variant/20 uppercase tracking-widest mt-1 md:mt-0">CONTINUOUS RAW TEXT OUTPUT</div>
                         </div>
                     ) : (
-                        <div className="text-on-surface-variant/80 font-['JetBrains_Mono'] leading-relaxed space-y-3">
+                        <div className="text-on-surface-variant/80 font-['JetBrains_Mono'] leading-relaxed space-y-2 md:space-y-3">
                             {logLines.map((line) => (
-                                <div key={line.id} className="flex gap-4 p-2 hover:bg-surface-container-high/30 transition-colors border-l-2 border-transparent hover:border-tertiary/40">
-                                    <span className="text-[9px] text-tertiary/40 shrink-0 mt-0.5">
+                                <div key={line.id} className="flex gap-3 md:gap-4 p-1.5 md:p-2 hover:bg-surface-container-high/30 transition-colors border-l-2 border-transparent hover:border-tertiary/40">
+                                    <span className="text-[8.5px] md:text-[9px] text-tertiary/40 shrink-0 mt-0.5">
                                         [{new Date().toISOString().substr(11, 8)}]
                                     </span>
                                     <span dangerouslySetInnerHTML={{ __html: line.html }} />
@@ -171,8 +171,8 @@ const IntelligenceFeed = () => {
                         </div>
                     )}
                     {isLive && (
-                        <div className="text-tertiary text-[10px] font-['JetBrains_Mono'] flex items-center gap-2 mt-4 ml-[72px]">
-                            <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse shadow-[0_0_5px_rgba(255,255,255,0.4)]"></span> TRANSCRIBING...
+                        <div className="text-tertiary text-[9px] md:text-[10px] font-['JetBrains_Mono'] flex items-center gap-2 mt-3 md:mt-4 ml-12 md:ml-[72px]">
+                            <span className="w-1 md:w-1.5 h-1 md:h-1.5 rounded-full bg-tertiary animate-pulse shadow-[0_0_5px_rgba(255,255,255,0.4)]"></span> TRANSCRIBING...
                         </div>
                     )}
                 </div>
@@ -189,34 +189,34 @@ const IntelligenceFeed = () => {
                 : 'border-primary text-primary hover:bg-primary hover:text-black';
 
             return (
-                <div ref={scrollRef} className={`overflow-y-auto p-4 flex flex-col font-['JetBrains_Mono'] text-xs ${className}`} style={height ? { height } : undefined}>
-                    <div className={`flex-1 flex flex-col items-center justify-center min-h-[250px] border-2 border-dashed border-outline-variant/20 ${themeBorderHover} ${themeBgHover} transition-all cursor-pointer group p-8 text-center rounded-sm`}>
-                        <span className={`material-symbols-outlined text-5xl mb-4 transition-transform group-hover:-translate-y-1 ${themeText}`}>
+                <div ref={scrollRef} className={`overflow-y-auto p-3 md:p-4 flex flex-col font-['JetBrains_Mono'] text-xs ${className}`} style={height ? { height } : undefined}>
+                    <div className={`flex-1 flex flex-col items-center justify-center min-h-[140px] md:min-h-[250px] border-2 border-dashed border-outline-variant/20 ${themeBorderHover} ${themeBgHover} transition-all cursor-pointer group p-4 md:p-8 text-center rounded-sm`}>
+                        <span className={`material-symbols-outlined text-3xl md:text-5xl mb-2 md:mb-4 transition-transform group-hover:-translate-y-1 ${themeText}`}>
                             {isTranscription ? 'description' : 'neurology'}
                         </span>
-                        <div className={`text-sm font-black uppercase tracking-widest mb-2 ${themeText}`}>
+                        <div className={`text-[11px] md:text-sm font-black uppercase tracking-widest mb-1 md:mb-2 ${themeText}`}>
                             UPLOAD AUDIO MANIFEST
                         </div>
-                        <div className="text-[10px] text-on-surface-variant/50 tracking-wider mb-6 max-w-[280px]">
+                        <div className="text-[8px] md:text-[10px] text-on-surface-variant/50 tracking-wider mb-3 md:mb-6 max-w-[280px]">
                             Drop your recorded {isTranscription ? 'audio file for bulk high-fidelity transcription' : 'meeting here to automatically extract Q&A insights'} or click to browse.
                         </div>
-                        <button className={`px-5 py-2.5 bg-transparent border text-[10px] font-black uppercase tracking-widest transition-colors ${themeButtonClasses}`}>
+                        <button className={`px-4 md:px-5 py-2 md:py-2.5 bg-transparent border text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-colors ${themeButtonClasses}`}>
                             SELECT LOCAL FILE
                         </button>
-                        <div className="text-[8px] text-on-surface-variant/30 mt-4 uppercase tracking-widest">
+                        <div className="text-[7px] md:text-[8px] text-on-surface-variant/30 mt-2 md:mt-4 uppercase tracking-widest">
                             SUPPORTED FORMATS: .MP3, .WAV, .M4A
                         </div>
                     </div>
                     {/* Progress area placeholder */}
-                    <div className="mt-4 p-4 border border-outline-variant/10 bg-[#0a0f0d] flex items-center justify-between opacity-50 grayscale pointer-events-none">
-                        <div className="flex items-center gap-3">
-                            <span className="material-symbols-outlined text-on-surface-variant">audio_file</span>
+                    <div className="mt-2 md:mt-4 p-2.5 md:p-4 border border-outline-variant/10 bg-[#0a0f0d] flex items-center justify-between opacity-50 grayscale pointer-events-none">
+                        <div className="flex items-center gap-2 md:gap-3">
+                            <span className="material-symbols-outlined text-[16px] md:text-[24px] text-on-surface-variant">audio_file</span>
                             <div>
-                                <div className="text-[10px] text-on-surface font-bold uppercase tracking-widest">AWAITING_UPLOAD.WAV</div>
-                                <div className="text-[8px] text-on-surface-variant/50 uppercase">0 MB / 0 MB</div>
+                                <div className="text-[9px] md:text-[10px] text-on-surface font-bold uppercase tracking-widest">AWAITING_UPLOAD.WAV</div>
+                                <div className="text-[7px] md:text-[8px] text-on-surface-variant/50 uppercase">0 MB / 0 MB</div>
                             </div>
                         </div>
-                        <div className="text-[9px] text-on-surface-variant/40">STANDBY</div>
+                        <div className="text-[8px] md:text-[9px] text-on-surface-variant/40">STANDBY</div>
                     </div>
                 </div>
             );
