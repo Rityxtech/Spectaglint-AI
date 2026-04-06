@@ -17,6 +17,7 @@ const IntelligenceFeed = () => {
     const [logLines, setLogLines] = useState([]);
     const [serviceMode, setServiceMode] = useState('LIVE_ANSWERS');
     const [extStatus, setExtStatus] = useState('IDLE'); // 'IDLE' | 'LIVE' | 'STOPPED'
+    const [actionToast, setActionToast] = useState({ open: false, type: 'success', title: '', desc: '' });
     const terminalRef = useRef(null);
     const mobileTerminalRef = useRef(null);
 
@@ -104,11 +105,22 @@ const IntelligenceFeed = () => {
     const clearTerminal = () => {
         setLogLines([]);
         window.postMessage({ type: 'CLEAR_CACHE' }, '*');
+        setActionToast({
+            open: true,
+            type: 'success',
+            title: 'CACHE PURGED',
+            desc: 'Internal telemetry buffer and visual state have been securely wiped.'
+        });
     };
 
     const exportLog = () => {
         if (logLines.length === 0) {
-            alert('No telemetry data available to export.');
+            setActionToast({
+                open: true,
+                type: 'error',
+                title: 'EXPORT FAILED',
+                desc: 'No telemetry data available for generating an export manifold.'
+            });
             return;
         }
 
@@ -145,6 +157,13 @@ const IntelligenceFeed = () => {
 
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+
+        setActionToast({
+            open: true,
+            type: 'success',
+            title: 'LOG EXPORTED',
+            desc: 'Telemetry block successfully formulated and downloaded to your local drive.'
+        });
     };
 
     if (loading) return <TechLoader />;
@@ -389,6 +408,31 @@ const IntelligenceFeed = () => {
                         {/* Full terminal content in modal */}
                         <TerminalContent scrollRef={mobileTerminalRef} className="flex-1" />
 
+                    </div>
+                </div>
+            )}
+
+            {/* ── ACTION TOAST MODAL */}
+            {actionToast.open && (
+                <div className="fixed inset-0 z-[100] flex md:items-center md:justify-center items-end bg-black/60 md:bg-black/80 backdrop-blur-sm transition-opacity">
+                    <div className="bg-[#030504] border-t md:border border-outline-variant/20 w-full md:w-[400px] p-6 md:p-8 relative shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:shadow-2xl">
+                        <button onClick={() => setActionToast({ open: false })} className="absolute top-4 right-4 text-on-surface-variant/50 hover:text-on-surface transition-colors">
+                            <X size={16} />
+                        </button>
+                        <div className="flex flex-col items-center text-center mt-2">
+                            <div className={`w-14 h-14 flex items-center justify-center rounded-full mb-5 bg-opacity-10 ${actionToast.type === 'error' ? 'bg-red-500 text-red-500 shadow-[0_0_20px_rgba(239,68,68,0.2)]' : 'bg-primary text-primary shadow-[0_0_20px_rgba(142,255,113,0.15)]'}`}>
+                                <span className="material-symbols-outlined text-[32px]">{actionToast.type === 'error' ? 'warning' : 'check_circle'}</span>
+                            </div>
+                            <h3 className={`text-sm md:text-base font-black uppercase tracking-[0.1em] mb-3 font-['JetBrains_Mono'] ${actionToast.type === 'error' ? 'text-red-400' : 'text-primary'}`}>
+                                {actionToast.title}
+                            </h3>
+                            <p className="text-[10px] md:text-[11px] text-on-surface-variant/60 uppercase tracking-wider font-['JetBrains_Mono'] leading-relaxed max-w-[280px]">
+                                {actionToast.desc}
+                            </p>
+                            <button onClick={() => setActionToast({ open: false })} className={`mt-6 w-full py-3.5 border transition-all text-[10px] font-black uppercase tracking-widest font-['JetBrains_Mono'] active:scale-[0.98] ${actionToast.type === 'error' ? 'border-red-500/20 text-red-500 hover:bg-red-500/10' : 'border-primary/20 text-primary hover:bg-primary/10'}`}>
+                                ACKNOWLEDGE
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
