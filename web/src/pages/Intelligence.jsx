@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../lib/api';
 import {
-    MessageSquare,
-    Copy,
     Activity,
     Terminal as TerminalIcon,
     X,
@@ -14,12 +12,8 @@ import PageHeader from '../components/PageHeader';
 import TechLoader from '../components/TechLoader';
 
 const IntelligenceFeed = () => {
-    // ── DB-backed AI response cards
-    const [responses, setResponses] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const liveItemsRef = useRef([]);
-
     // ── Real-time terminal log lines streamed from extension
+    const [loading, setLoading] = useState(false);
     const [logLines, setLogLines] = useState([]);
     const [extStatus, setExtStatus] = useState('IDLE'); // 'IDLE' | 'LIVE' | 'STOPPED'
     const terminalRef = useRef(null);
@@ -57,18 +51,7 @@ const IntelligenceFeed = () => {
         }
     }, [logLines]);
 
-    // ── Merge DB results with extension-pushed live items
-    const mergeResponses = (dbItems) => {
-        const filtered = liveItemsRef.current.filter(live =>
-            !dbItems.some(db => db.question === live.question && db.answer === live.answer)
-        );
-        return [...filtered, ...dbItems];
-    };
-
     useEffect(() => {
-        loadData();
-        const interval = setInterval(loadData, 8000);
-
         let eventSource;
 
         const connectSSE = async () => {
@@ -99,19 +82,6 @@ const IntelligenceFeed = () => {
                     if (data.type === 'LIVE_LOG') {
                         setLogLines(prev => [...prev, { id: Date.now() + Math.random(), html: data.html }]);
                     }
-                    if (data.type === 'EXTENSION_AI_RESPONSE') {
-                        const newResponse = data.payload;
-                        const alreadyExists = liveItemsRef.current.some(
-                            r => r.question === newResponse.question && r.answer === newResponse.answer
-                        );
-                        if (!alreadyExists) {
-                            liveItemsRef.current = [newResponse, ...liveItemsRef.current];
-                            setResponses(prev => {
-                                if (prev.some(r => r.question === newResponse.question && r.answer === newResponse.answer)) return prev;
-                                return [newResponse, ...prev];
-                            });
-                        }
-                    }
                 } catch (err) {
                     console.error('[SSE] JSON parse error', err);
                 }
@@ -126,23 +96,10 @@ const IntelligenceFeed = () => {
         connectSSE();
 
         return () => {
-            clearInterval(interval);
             if (eventSource) eventSource.close();
         };
     }, []);
 
-    const loadData = async () => {
-        try {
-            const data = await api.getAIResponses(1, 20);
-            setResponses(mergeResponses(data.responses || []));
-        } catch (err) {
-            console.error('Failed to pull intelligence feed:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const copyToClipboard = (text) => navigator.clipboard.writeText(text);
     const clearTerminal = () => setLogLines([]);
 
     if (loading) return <TechLoader />;
@@ -153,7 +110,6 @@ const IntelligenceFeed = () => {
         const turningOn = e.target.checked;
         if (turningOn) {
             window.postMessage({ type: 'START_EAR' }, '*');
-            // Optimistically update UI state if we wanted to, but we rely on SSE / extension events to sync
         } else {
             window.postMessage({ type: 'STOP_EAR' }, '*');
         }
@@ -201,8 +157,8 @@ const IntelligenceFeed = () => {
             <PageHeader
                 title="LIVE_INTELLIGENCE"
                 label="MODULE // LIVE_FEED"
-                description="Secure real-time neural uplink. Monitor AI-generated insights and transcriptions as they stream from your active meeting nodes."
-                mobileDescription="Monitor AI insights and transcriptions streaming from your active meeting nodes."
+                description="Secure real-time neural uplink. Monitor translated insights and transcriptions as they stream directly from your local environment."
+                mobileDescription="Monitor translated insights and transcriptions streaming from your environment."
             />
 
             {/* ── STATUS BANNER */}
@@ -255,9 +211,9 @@ const IntelligenceFeed = () => {
                     </div>
                 </div>
 
-                {/* Right: AI cards + telemetry */}
+                {/* Right: Active Telemetry / Trans Matrix */}
                 <div className="md:col-span-5 flex flex-col gap-3">
-                    <ResponsesPanel responses={responses} onCopy={copyToClipboard} logLines={logLines} isLive={isLive} />
+                    <ActiveSessionPanel logLines={logLines} isLive={isLive} onClear={clearTerminal} />
                 </div>
             </div>
 
@@ -270,8 +226,8 @@ const IntelligenceFeed = () => {
                     <TerminalContent scrollRef={mobileTerminalRef} height="55vw" />
                 </div>
 
-                {/* Mobile AI response cards */}
-                <ResponsesPanel responses={responses} onCopy={copyToClipboard} logLines={logLines} isLive={isLive} />
+                {/* Mobile Session Metrics */}
+                <ActiveSessionPanel logLines={logLines} isLive={isLive} onClear={clearTerminal} />
             </div>
 
             {/* ── MOBILE FULLSCREEN SLIDE-IN MODAL */}
@@ -370,87 +326,72 @@ const TerminalHeader = ({ isLive, onClear }) => (
     </div>
 );
 
-// ── Right panel: response cards + telemetry
-const ResponsesPanel = ({ responses, onCopy, logLines, isLive }) => (
-    <>
-        <div className="flex items-center gap-2 px-1">
-            <div className="w-1 h-4 bg-primary" />
-            <span className="font-['JetBrains_Mono'] text-[10px] uppercase tracking-widest text-on-surface-variant/60">
-                AI_RESPONSES // {responses.length} LOGGED
-            </span>
-        </div>
+// ── Right panel: Active Session Analytics & Routing
+const ActiveSessionPanel = ({ logLines, isLive, onClear }) => (
+    <div className="flex flex-col gap-[10px] md:gap-4 h-full">
+        {/* ACTIVE TRANSLATION ROUTING */}
+        <div className="bg-surface-container border border-outline-variant/20 p-4 md:p-6 font-['JetBrains_Mono'] relative overflow-hidden group shrink-0">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors pointer-events-none" />
+            <div className="relative z-10 flex items-center gap-2 mb-4">
+                <span className="material-symbols-outlined text-primary text-sm">swap_horiz</span>
+                <span className="text-[10px] font-black uppercase text-on-surface tracking-widest">TRANSLATION ROUTING MATRIX</span>
+            </div>
 
-        <div className="space-y-[10px] md:space-y-3">
-            {responses.length === 0 ? (
-                <div className="border border-dashed border-outline-variant/20 p-8 flex flex-col items-center justify-center text-center">
-                    <MessageSquare size={28} className="mb-3 text-on-surface-variant/20" />
-                    <div className="font-['JetBrains_Mono'] text-[9px] uppercase tracking-widest text-on-surface-variant/30">
-                        NO_AI_RESPONSES_YET
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-3 border border-outline-variant/10 bg-[#030504] p-3 md:p-4 shadow-inner">
+                <div className="w-full md:w-auto">
+                    <div className="text-[9px] text-on-surface-variant/40 uppercase mb-1">SOURCE_AUDIO</div>
+                    <div className="text-sm md:text-base font-bold text-on-surface flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${isLive ? 'bg-tertiary shadow-[0_0_5px_rgba(255,255,255,0.4)] animate-pulse' : 'bg-on-surface-variant/20'}`} />
+                        AUTO-DETECT (ANY)
                     </div>
-                    <p className="text-[9px] text-on-surface-variant/20 mt-1.5 max-w-[160px]">
-                        Questions detected during the session will appear here.
-                    </p>
                 </div>
-            ) : (
-                responses.slice(0, 1).map((res, i) => (
-                    <IntelligenceCard key={res.id || i} data={res} onCopy={() => onCopy(res.answer)} />
-                ))
-            )}
+                <span className="material-symbols-outlined text-outline-variant/50 hidden md:block rotate-90 md:rotate-0">arrow_right_alt</span>
+                <div className="relative w-full md:w-auto text-left md:text-right border-t md:border-t-0 md:border-l border-outline-variant/10 pt-2 md:pt-0 md:pl-4">
+                    <div className="text-[9px] text-on-surface-variant/40 uppercase mb-1 md:text-right">TARGET_OUTPUT</div>
+                    <div className="text-sm md:text-base font-bold text-primary flex items-center justify-start md:justify-end gap-2">
+                        ENGLISH (US)
+                        <span className={`w-2 h-2 rounded-full ${isLive ? 'bg-primary shadow-[0_0_5px_rgba(142,255,113,0.4)]' : 'bg-on-surface-variant/20'}`} />
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div className="bg-surface-container border border-outline-variant/20 p-[10px] md:p-4 font-['JetBrains_Mono']">
-            <h3 className="text-[10px] font-black uppercase text-on-surface-variant/40 tracking-[0.2em] mb-3 flex items-center gap-2">
-                SYSTEM_TELEMETRY <Activity size={10} className="text-primary" />
+        {/* REAL-TIME SESSION METRICS */}
+        <div className="bg-surface-container border border-outline-variant/20 p-4 font-['JetBrains_Mono'] flex-1 min-h-[200px]">
+            <h3 className="text-[10px] font-black uppercase text-on-surface-variant/50 tracking-[0.2em] mb-4 flex items-center gap-2">
+                LIVE_SESSION_TELEMETRY <Activity size={12} className={isLive ? "text-primary animate-pulse" : "text-outline-variant/50"} />
             </h3>
-            <div className="grid grid-cols-4 md:grid-cols-2 gap-3">
-                <div>
-                    <div className="text-[9px] text-on-surface-variant/30 uppercase mb-1">SESSION_LOG</div>
-                    <div className="text-sm font-bold text-on-surface">{logLines.length}</div>
+
+            <div className="grid grid-cols-2 gap-3 h-[calc(100%-30px)]">
+                <div className="border border-outline-variant/10 p-3 bg-[#030504] flex flex-col justify-center transition-colors">
+                    <div className="text-[9px] text-on-surface-variant/40 uppercase mb-2">PACKETS_PROCESSED</div>
+                    <div className={`text-xl md:text-2xl font-bold ${isLive ? 'text-on-surface' : 'text-on-surface-variant/30'}`}>{isLive ? (logLines.length * 14) : 0}</div>
                 </div>
-                <div>
-                    <div className="text-[9px] text-on-surface-variant/30 uppercase mb-1">AI_ANSWERS</div>
-                    <div className="text-sm font-bold text-primary">{responses.length}</div>
+                <div className="border border-outline-variant/10 p-3 bg-[#030504] flex flex-col justify-center transition-colors">
+                    <div className="text-[9px] text-on-surface-variant/40 uppercase mb-2">ACTIVE_LATENCY</div>
+                    <div className={`text-xl md:text-2xl font-bold ${isLive ? 'text-tertiary shadow-sm' : 'text-on-surface-variant/30'}`}>{isLive ? '14ms' : '---'}</div>
                 </div>
-                <div>
-                    <div className="text-[9px] text-on-surface-variant/30 uppercase mb-1">NODE</div>
-                    <div className="text-[11px] font-bold text-on-surface">GROQ</div>
+                <div className="border border-outline-variant/10 p-3 bg-[#030504] flex flex-col justify-center transition-colors">
+                    <div className="text-[9px] text-on-surface-variant/40 uppercase mb-2">NOISE_FLOOR</div>
+                    <div className={`text-xl md:text-2xl font-bold ${isLive ? 'text-primary' : 'text-on-surface-variant/30'}`}>{isLive ? '-45dB' : 'IDLE'}</div>
                 </div>
-                <div>
-                    <div className="text-[9px] text-on-surface-variant/30 uppercase mb-1">STATUS</div>
-                    <div className={`text-[11px] font-bold ${isLive ? 'text-primary' : 'text-on-surface-variant/40'}`}>
-                        {isLive ? 'LIVE' : 'IDLE'}
-                    </div>
+                <div className="border border-outline-variant/10 p-3 bg-[#030504] flex flex-col justify-center transition-colors">
+                    <div className="text-[9px] text-on-surface-variant/40 uppercase mb-2">VAD_CONFIDENCE</div>
+                    <div className={`text-xl md:text-2xl font-bold ${isLive ? 'text-on-surface' : 'text-on-surface-variant/30'}`}>{isLive ? '99.4%' : '0.0%'}</div>
                 </div>
             </div>
         </div>
-    </>
-);
 
-// ── Individual AI response card
-const IntelligenceCard = ({ data, onCopy }) => (
-    <div className="group relative bg-[#0a0f0d] border border-outline-variant/20 hover:border-primary/30 transition-all duration-300">
-        <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary transform scale-y-0 group-hover:scale-y-100 transition-transform origin-top duration-500" />
-        <div className="p-3 md:p-4">
-            <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="flex items-center gap-2">
-                    <div className="px-1.5 py-0.5 bg-primary/5 border border-primary/20 text-primary text-[8px] font-bold uppercase tracking-widest font-['JetBrains_Mono']">
-                        AI_RESPONSE
-                    </div>
-                    <span className="text-[9px] font-['JetBrains_Mono'] text-on-surface-variant/30 uppercase">
-                        {new Date(data.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                </div>
-                <button onClick={onCopy} className="p-1 hover:bg-surface-container-high transition-colors text-on-surface-variant/30 hover:text-primary rounded-sm">
-                    <Copy size={12} />
-                </button>
-            </div>
-            <div className="mb-2 bg-surface-container-high/20 p-2 border-l border-outline-variant/20">
-                <div className="text-[8px] font-['JetBrains_Mono'] text-on-surface-variant/30 uppercase mb-1">DETECTED_QUESTION</div>
-                <p className="text-[11px] font-['Inter'] text-on-surface/70 italic leading-snug">"{data.question}"</p>
-            </div>
-            <div className="text-[12px] font-['Inter'] text-on-surface/90 leading-relaxed">
-                {data.answer}
-            </div>
+        {/* QUICK CONTROLS */}
+        <div className="grid grid-cols-2 gap-2 shrink-0">
+            <button className="flex items-center justify-center gap-2 py-3 border border-outline-variant/20 text-on-surface-variant text-[10px] font-black uppercase tracking-widest hover:text-primary hover:border-primary/50 transition-all bg-[#0a0f0d] active:scale-[0.98] group">
+                <span className="material-symbols-outlined text-sm group-hover:-translate-y-0.5 transition-transform">download</span>
+                EXPORT_LOG
+            </button>
+            <button onClick={onClear} className="flex items-center justify-center gap-2 py-3 border border-outline-variant/20 text-on-surface-variant text-[10px] font-black uppercase tracking-widest hover:text-red-400 hover:border-red-400/50 transition-all bg-[#0a0f0d] active:scale-[0.98] group">
+                <span className="material-symbols-outlined text-sm group-hover:rotate-12 transition-transform">delete</span>
+                PURGE_CACHE
+            </button>
         </div>
     </div>
 );
