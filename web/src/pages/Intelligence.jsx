@@ -116,41 +116,113 @@ const IntelligenceFeed = () => {
         }
     };
 
-    // ── Reusable terminal body content
-    const TerminalContent = ({ scrollRef, height, className = "" }) => (
-        <div
-            ref={scrollRef}
-            className={`overflow-y-auto p-4 space-y-1.5 font-['JetBrains_Mono'] text-xs ${className}`}
-            style={height ? { height } : undefined}
-        >
-            {logLines.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center">
-                    <TerminalIcon size={28} className="text-on-surface-variant/15 mb-3" />
-                    <div className="text-[10px] text-on-surface-variant/30 uppercase tracking-widest">
-                        {isLive ? 'CONNECTED — WAITING FOR AUDIO INPUT...' : 'TERMINAL IDLE — CAPTURE ENGINE OFFLINE'}
-                    </div>
+    // ── Dynamic terminal body content based on selected Operation Protocol
+    const TerminalContent = ({ scrollRef, height, className = "" }) => {
+        if (serviceMode === 'LIVE_ANSWERS') {
+            return (
+                <div ref={scrollRef} className={`overflow-y-auto p-4 space-y-1.5 font-['JetBrains_Mono'] text-xs ${className}`} style={height ? { height } : undefined}>
+                    {logLines.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center">
+                            <TerminalIcon size={28} className="text-on-surface-variant/15 mb-3" />
+                            <div className="text-[10px] text-on-surface-variant/30 uppercase tracking-widest">
+                                {isLive ? 'CONNECTED — WAITING FOR AUDIO INPUT...' : 'TERMINAL IDLE — CAPTURE ENGINE OFFLINE'}
+                            </div>
+                            {isLive && (
+                                <div className="flex items-center gap-1.5 mt-3 text-primary/50 text-[9px]">
+                                    <span className="animate-pulse">▋</span> LISTENING...
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        logLines.map(line => (
+                            <div key={line.id} className="leading-relaxed border-l-2 border-outline-variant/10 pl-3 py-0.5 hover:border-primary/30 transition-all" dangerouslySetInnerHTML={{ __html: line.html }} />
+                        ))
+                    )}
                     {isLive && (
-                        <div className="flex items-center gap-1.5 mt-3 text-primary/50 text-[9px]">
-                            <span className="animate-pulse">▋</span> LISTENING...
+                        <div className="text-primary/70 text-[11px] pl-3 flex items-center gap-1 mt-1">
+                            <span className="animate-pulse">▋</span>
                         </div>
                     )}
                 </div>
-            ) : (
-                logLines.map(line => (
-                    <div
-                        key={line.id}
-                        className="leading-relaxed border-l-2 border-outline-variant/10 pl-3 py-0.5 hover:border-primary/30 transition-all"
-                        dangerouslySetInnerHTML={{ __html: line.html }}
-                    />
-                ))
-            )}
-            {isLive && (
-                <div className="text-primary/70 text-[11px] pl-3 flex items-center gap-1 mt-1">
-                    <span className="animate-pulse">▋</span>
+            );
+        }
+
+        if (serviceMode === 'LIVE_TRANSCRIPTION') {
+            return (
+                <div ref={scrollRef} className={`overflow-y-auto p-5 font-mono text-xs tracking-wide ${className}`} style={height ? { height } : undefined}>
+                    {logLines.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center font-['JetBrains_Mono']">
+                            <span className="material-symbols-outlined text-4xl text-on-surface-variant/15 mb-3">graphic_eq</span>
+                            <div className="text-[10px] text-on-surface-variant/30 uppercase tracking-widest mb-1">
+                                {isLive ? 'AWAITING VOCAL CAPTURE STREAM' : 'LIVE TRANSCRIPTION ENGINE OFFLINE'}
+                            </div>
+                            <div className="text-[8px] text-on-surface-variant/20 uppercase tracking-widest">CONTINUOUS RAW TEXT OUTPUT</div>
+                        </div>
+                    ) : (
+                        <div className="text-on-surface-variant/80 font-['JetBrains_Mono'] leading-relaxed space-y-3">
+                            {logLines.map((line) => (
+                                <div key={line.id} className="flex gap-4 p-2 hover:bg-surface-container-high/30 transition-colors border-l-2 border-transparent hover:border-tertiary/40">
+                                    <span className="text-[9px] text-tertiary/40 shrink-0 mt-0.5">
+                                        [{new Date().toISOString().substr(11, 8)}]
+                                    </span>
+                                    <span dangerouslySetInnerHTML={{ __html: line.html }} />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    {isLive && (
+                        <div className="text-tertiary text-[10px] font-['JetBrains_Mono'] flex items-center gap-2 mt-4 ml-[72px]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse shadow-[0_0_5px_rgba(255,255,255,0.4)]"></span> TRANSCRIBING...
+                        </div>
+                    )}
                 </div>
-            )}
-        </div>
-    );
+            );
+        }
+
+        if (serviceMode === 'FILE_ANSWERS' || serviceMode === 'FILE_TRANSCRIPTION') {
+            const isTranscription = serviceMode === 'FILE_TRANSCRIPTION';
+            const themeBorderHover = isTranscription ? 'hover:border-tertiary/40' : 'hover:border-primary/40';
+            const themeBgHover = isTranscription ? 'hover:bg-tertiary/5' : 'hover:bg-primary/5';
+            const themeText = isTranscription ? 'text-tertiary' : 'text-primary';
+            const themeButtonClasses = isTranscription
+                ? 'border-tertiary text-tertiary hover:bg-tertiary hover:text-black'
+                : 'border-primary text-primary hover:bg-primary hover:text-black';
+
+            return (
+                <div ref={scrollRef} className={`overflow-y-auto p-4 flex flex-col font-['JetBrains_Mono'] text-xs ${className}`} style={height ? { height } : undefined}>
+                    <div className={`flex-1 flex flex-col items-center justify-center min-h-[250px] border-2 border-dashed border-outline-variant/20 ${themeBorderHover} ${themeBgHover} transition-all cursor-pointer group p-8 text-center rounded-sm`}>
+                        <span className={`material-symbols-outlined text-5xl mb-4 transition-transform group-hover:-translate-y-1 ${themeText}`}>
+                            {isTranscription ? 'description' : 'neurology'}
+                        </span>
+                        <div className={`text-sm font-black uppercase tracking-widest mb-2 ${themeText}`}>
+                            UPLOAD AUDIO MANIFEST
+                        </div>
+                        <div className="text-[10px] text-on-surface-variant/50 tracking-wider mb-6 max-w-[280px]">
+                            Drop your recorded {isTranscription ? 'audio file for bulk high-fidelity transcription' : 'meeting here to automatically extract Q&A insights'} or click to browse.
+                        </div>
+                        <button className={`px-5 py-2.5 bg-transparent border text-[10px] font-black uppercase tracking-widest transition-colors ${themeButtonClasses}`}>
+                            SELECT LOCAL FILE
+                        </button>
+                        <div className="text-[8px] text-on-surface-variant/30 mt-4 uppercase tracking-widest">
+                            SUPPORTED FORMATS: .MP3, .WAV, .M4A
+                        </div>
+                    </div>
+                    {/* Progress area placeholder */}
+                    <div className="mt-4 p-4 border border-outline-variant/10 bg-[#0a0f0d] flex items-center justify-between opacity-50 grayscale pointer-events-none">
+                        <div className="flex items-center gap-3">
+                            <span className="material-symbols-outlined text-on-surface-variant">audio_file</span>
+                            <div>
+                                <div className="text-[10px] text-on-surface font-bold uppercase tracking-widest">AWAITING_UPLOAD.WAV</div>
+                                <div className="text-[8px] text-on-surface-variant/50 uppercase">0 MB / 0 MB</div>
+                            </div>
+                        </div>
+                        <div className="text-[9px] text-on-surface-variant/40">STANDBY</div>
+                    </div>
+                </div>
+            );
+        }
+        return null;
+    };
 
     return (
         <div className="w-full flex flex-col gap-[10px] md:gap-4 flex-1">
@@ -271,32 +343,7 @@ const IntelligenceFeed = () => {
                         </div>
 
                         {/* Full terminal content in modal */}
-                        <div
-                            ref={mobileTerminalRef}
-                            className="flex-1 overflow-y-auto p-4 space-y-2 font-['JetBrains_Mono'] text-xs"
-                        >
-                            {logLines.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center h-full text-center min-h-[300px]">
-                                    <TerminalIcon size={32} className="text-on-surface-variant/15 mb-3" />
-                                    <div className="text-[10px] text-on-surface-variant/30 uppercase tracking-widest">
-                                        {isLive ? 'CONNECTED — WAITING FOR AUDIO...' : 'ACTIVATE EXTENSION TO BEGIN'}
-                                    </div>
-                                </div>
-                            ) : (
-                                logLines.map(line => (
-                                    <div
-                                        key={line.id}
-                                        className="leading-relaxed border-l-2 border-outline-variant/10 pl-3 py-0.5"
-                                        dangerouslySetInnerHTML={{ __html: line.html }}
-                                    />
-                                ))
-                            )}
-                            {isLive && (
-                                <div className="text-primary/70 text-[11px] pl-3 flex items-center gap-1 mt-1">
-                                    <span className="animate-pulse">▋</span>
-                                </div>
-                            )}
-                        </div>
+                        <TerminalContent scrollRef={mobileTerminalRef} className="flex-1" />
 
                     </div>
                 </div>
@@ -354,8 +401,8 @@ const ActiveSessionPanel = ({ logLines, isLive, onClear, serviceMode, setService
                                 key={mode.id}
                                 onClick={() => setServiceMode && setServiceMode(mode.id)}
                                 className={`flex items-start gap-2.5 p-2.5 border text-left transition-all ${isActive
-                                        ? 'bg-primary/5 border-primary shadow-[0_0_10px_rgba(142,255,113,0.05)]'
-                                        : 'bg-[#030504] border-outline-variant/10 hover:border-primary/40'
+                                    ? 'bg-primary/5 border-primary shadow-[0_0_10px_rgba(142,255,113,0.05)]'
+                                    : 'bg-[#030504] border-outline-variant/10 hover:border-primary/40'
                                     }`}
                             >
                                 <span className={`material-symbols-outlined text-base mt-0.5 ${isActive ? 'text-primary' : 'text-on-surface-variant/50'}`}>
