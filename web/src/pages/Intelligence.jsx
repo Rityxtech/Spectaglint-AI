@@ -116,11 +116,11 @@ const IntelligenceFeed = () => {
     };
 
     // ── Reusable terminal body content
-    const TerminalContent = ({ scrollRef, height }) => (
+    const TerminalContent = ({ scrollRef, height, className = "" }) => (
         <div
             ref={scrollRef}
-            className="overflow-y-auto p-4 space-y-1.5 font-['JetBrains_Mono'] text-xs"
-            style={{ height }}
+            className={`overflow-y-auto p-4 space-y-1.5 font-['JetBrains_Mono'] text-xs ${className}`}
+            style={height ? { height } : undefined}
         >
             {logLines.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center">
@@ -152,7 +152,7 @@ const IntelligenceFeed = () => {
     );
 
     return (
-        <div className="w-full flex flex-col gap-[10px] md:gap-4">
+        <div className="w-full flex flex-col gap-[10px] md:gap-4 flex-1">
 
             <PageHeader
                 title="LIVE_INTELLIGENCE"
@@ -201,13 +201,13 @@ const IntelligenceFeed = () => {
             </div>
 
             {/* ── DESKTOP LAYOUT: side-by-side grid */}
-            <div className="hidden md:grid md:grid-cols-12 gap-6">
+            <div className="hidden md:grid md:grid-cols-12 gap-6 items-stretch flex-1 min-h-[400px]">
 
                 {/* Left: Terminal */}
-                <div className="md:col-span-7 flex flex-col">
-                    <div className="bg-[#030504] border border-outline-variant/20 flex flex-col">
+                <div className="md:col-span-7 flex flex-col h-full">
+                    <div className="bg-[#030504] border border-outline-variant/20 flex flex-col h-full">
                         <TerminalHeader isLive={isLive} onClear={clearTerminal} />
-                        <TerminalContent scrollRef={terminalRef} height="calc(100vh - 340px)" />
+                        <TerminalContent scrollRef={terminalRef} className="flex-1" />
                     </div>
                 </div>
 
