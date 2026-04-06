@@ -145,9 +145,9 @@ const Dashboard = () => {
                     <div className="hidden md:flex items-center gap-3">
                         <span className="font-['JetBrains_Mono'] text-[10px] text-on-surface-variant/50 uppercase tracking-widest">FILTER:</span>
                         <div className="relative">
-                            <select 
-                                className="bg-surface-container-high/50 border border-outline-variant/30 text-on-surface font-['JetBrains_Mono'] text-[10px] uppercase tracking-widest px-3 py-2 pr-8 appearance-none cursor-pointer hover:border-primary/50 focus:border-primary focus:outline-none transition-colors" 
-                                value={filter} 
+                            <select
+                                className="bg-surface-container-high/50 border border-outline-variant/30 text-on-surface font-['JetBrains_Mono'] text-[10px] uppercase tracking-widest px-3 py-2 pr-8 appearance-none cursor-pointer hover:border-primary/50 focus:border-primary focus:outline-none transition-colors"
+                                value={filter}
                                 onChange={e => setFilter(e.target.value)}
                             >
                                 <option value="all">ALL SESSIONS</option>
@@ -158,7 +158,7 @@ const Dashboard = () => {
                         </div>
                     </div>
                     <div className="md:hidden relative">
-                        <button 
+                        <button
                             onClick={() => setShowMobileFilter(!showMobileFilter)}
                             className={`material-symbols-outlined text-[35px] transition-colors ${showMobileFilter ? 'text-primary' : 'text-on-surface-variant/50'}`}
                         >
@@ -166,33 +166,33 @@ const Dashboard = () => {
                         </button>
                         {showMobileFilter && (
                             <>
-                                <div 
-                                    className="fixed inset-0 z-40" 
+                                <div
+                                    className="fixed inset-0 z-40"
                                     onClick={() => setShowMobileFilter(false)}
                                 />
                                 <div className="absolute right-0 top-full mt-2 bg-surface-container border border-outline-variant/30 shadow-lg z-[45] min-w-[160px]">
-                                <div className="font-['JetBrains_Mono'] text-[9px] text-on-surface-variant/50 uppercase tracking-widest px-3 py-2 border-b border-outline-variant/20">
-                                    FILTER BY
+                                    <div className="font-['JetBrains_Mono'] text-[9px] text-on-surface-variant/50 uppercase tracking-widest px-3 py-2 border-b border-outline-variant/20">
+                                        FILTER BY
+                                    </div>
+                                    <button
+                                        onClick={() => { setFilter('all'); setShowMobileFilter(false); }}
+                                        className={`w-full text-left px-3 py-3 font-['JetBrains_Mono'] text-[11px] uppercase tracking-wider transition-colors hover:bg-surface-container-high ${filter === 'all' ? 'text-primary bg-primary/5' : 'text-on-surface'}`}
+                                    >
+                                        ALL SESSIONS
+                                    </button>
+                                    <button
+                                        onClick={() => { setFilter('active'); setShowMobileFilter(false); }}
+                                        className={`w-full text-left px-3 py-3 font-['JetBrains_Mono'] text-[11px] uppercase tracking-wider transition-colors hover:bg-surface-container-high ${filter === 'active' ? 'text-primary bg-primary/5' : 'text-on-surface'}`}
+                                    >
+                                        ACTIVE ONLY
+                                    </button>
+                                    <button
+                                        onClick={() => { setFilter('inactive'); setShowMobileFilter(false); }}
+                                        className={`w-full text-left px-3 py-3 font-['JetBrains_Mono'] text-[11px] uppercase tracking-wider transition-colors hover:bg-surface-container-high ${filter === 'inactive' ? 'text-primary bg-primary/5' : 'text-on-surface'}`}
+                                    >
+                                        ARCHIVED ONLY
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={() => { setFilter('all'); setShowMobileFilter(false); }}
-                                    className={`w-full text-left px-3 py-3 font-['JetBrains_Mono'] text-[11px] uppercase tracking-wider transition-colors hover:bg-surface-container-high ${filter === 'all' ? 'text-primary bg-primary/5' : 'text-on-surface'}`}
-                                >
-                                    ALL SESSIONS
-                                </button>
-                                <button
-                                    onClick={() => { setFilter('active'); setShowMobileFilter(false); }}
-                                    className={`w-full text-left px-3 py-3 font-['JetBrains_Mono'] text-[11px] uppercase tracking-wider transition-colors hover:bg-surface-container-high ${filter === 'active' ? 'text-primary bg-primary/5' : 'text-on-surface'}`}
-                                >
-                                    ACTIVE ONLY
-                                </button>
-                                <button
-                                    onClick={() => { setFilter('inactive'); setShowMobileFilter(false); }}
-                                    className={`w-full text-left px-3 py-3 font-['JetBrains_Mono'] text-[11px] uppercase tracking-wider transition-colors hover:bg-surface-container-high ${filter === 'inactive' ? 'text-primary bg-primary/5' : 'text-on-surface'}`}
-                                >
-                                    ARCHIVED ONLY
-                                </button>
-                            </div>
                             </>
                         )}
                     </div>
@@ -269,13 +269,13 @@ const Dashboard = () => {
                             </div>
 
                             {/* Desktop CTA */}
-                             <Link
-                                 to="/history"
-                                 className="hidden md:flex shrink-0 px-5 py-2.5 border border-outline-variant/40 text-on-surface font-['Inter'] font-black uppercase text-[10px] tracking-widest hover:border-primary hover:text-primary transition-all items-center gap-2"
-                             >
-                                 <span>VIEW</span>
-                                 <span className="material-symbols-outlined text-sm">visibility</span>
-                             </Link>
+                            <Link
+                                to="/history"
+                                className="hidden md:flex shrink-0 px-5 py-2.5 border border-outline-variant/40 text-on-surface font-['Inter'] font-black uppercase text-[10px] tracking-widest hover:border-primary hover:text-primary transition-all items-center gap-2"
+                            >
+                                <span>VIEW</span>
+                                <span className="material-symbols-outlined text-sm">visibility</span>
+                            </Link>
                         </div>
                     ))}
                 </div>
@@ -347,6 +347,42 @@ const Dashboard = () => {
 
 /* ── Extension Status Banner ── */
 const ExtensionStatusBanner = ({ connected }) => {
+    const [isLive, setIsLive] = useState(false);
+
+    useEffect(() => {
+        if (!connected) return;
+
+        const handleMessage = (event) => {
+            if (event.data?.type === 'EAR_STATUS_RESPONSE') {
+                setIsLive(event.data.isListening);
+            }
+        };
+        window.addEventListener('message', handleMessage);
+
+        // Request status on load
+        window.postMessage({ type: 'GET_EAR_STATUS' }, '*');
+
+        // Also setup an interval to keep things synced if toggled from extension popup
+        const interval = setInterval(() => {
+            window.postMessage({ type: 'GET_EAR_STATUS' }, '*');
+        }, 3000);
+
+        return () => {
+            window.removeEventListener('message', handleMessage);
+            clearInterval(interval);
+        };
+    }, [connected]);
+
+    const handleToggle = (e) => {
+        const turningOn = e.target.checked;
+        setIsLive(turningOn);
+        if (turningOn) {
+            window.postMessage({ type: 'START_EAR' }, '*');
+        } else {
+            window.postMessage({ type: 'STOP_EAR' }, '*');
+        }
+    };
+
     return (
         <div className={`border p-[10px] md:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 md:gap-4 transition-all duration-500 ${connected
             ? 'bg-primary/5 border-primary/30 shadow-[0_0_20px_rgba(142,255,113,0.05)]'
@@ -380,7 +416,7 @@ const ExtensionStatusBanner = ({ connected }) => {
                     </div>
                     <p className="font-body text-xs md:text-sm text-on-surface-variant">
                         {connected
-                            ? 'The Chrome Extension is linked and actively capturing audio from supported meeting platforms.'
+                            ? 'The Chrome Extension is linked. Use the toggle to begin capturing live audio from supported platforms.'
                             : 'To capture live meeting audio, the Chrome Extension must be installed and active. No audio feed is currently being received.'
                         }
                     </p>
@@ -399,9 +435,13 @@ const ExtensionStatusBanner = ({ connected }) => {
                 </button>
             )}
             {connected && (
-                <div className="shrink-0 flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 border border-primary/20 font-['JetBrains_Mono'] text-[10px] text-primary uppercase tracking-widest">
-                    <span className="material-symbols-outlined text-sm">radio_button_checked</span>
-                    STREAM_ACTIVE
+                <div className="shrink-0 flex items-center gap-3 px-3 md:px-4 py-1.5 md:py-2 border border-primary/20 font-['JetBrains_Mono'] text-[10px] text-primary uppercase tracking-widest bg-[#030504]">
+                    <span className="material-symbols-outlined text-sm">headphones</span>
+                    <span>{isLive ? 'STREAM_ACTIVE' : 'STREAM_STANDBY'}</span>
+                    <label className="relative inline-flex items-center cursor-pointer ml-1">
+                        <input type="checkbox" className="sr-only peer" checked={isLive} onChange={handleToggle} />
+                        <div className="w-9 h-5 bg-surface-container-high peer-focus:outline-none border border-outline-variant/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-black after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-outline-variant/50 after:border-outline-variant/50 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary peer-checked:after:bg-black"></div>
+                    </label>
                 </div>
             )}
         </div>
