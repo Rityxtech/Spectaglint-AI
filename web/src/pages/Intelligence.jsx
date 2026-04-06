@@ -149,6 +149,16 @@ const IntelligenceFeed = () => {
 
     const isLive = extStatus === 'LIVE';
 
+    const handleToggle = (e) => {
+        const turningOn = e.target.checked;
+        if (turningOn) {
+            window.postMessage({ type: 'START_EAR' }, '*');
+            // Optimistically update UI state if we wanted to, but we rely on SSE / extension events to sync
+        } else {
+            window.postMessage({ type: 'STOP_EAR' }, '*');
+        }
+    };
+
     // ── Reusable terminal body content
     const TerminalContent = ({ scrollRef, height }) => (
         <div
@@ -160,7 +170,7 @@ const IntelligenceFeed = () => {
                 <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center">
                     <TerminalIcon size={28} className="text-on-surface-variant/15 mb-3" />
                     <div className="text-[10px] text-on-surface-variant/30 uppercase tracking-widest">
-                        {isLive ? 'CONNECTED — WAITING FOR AUDIO INPUT...' : 'TERMINAL IDLE — ACTIVATE EXTENSION TO BEGIN'}
+                        {isLive ? 'CONNECTED — WAITING FOR AUDIO INPUT...' : 'TERMINAL IDLE — CAPTURE ENGINE OFFLINE'}
                     </div>
                     {isLive && (
                         <div className="flex items-center gap-1.5 mt-3 text-primary/50 text-[9px]">
@@ -211,17 +221,24 @@ const IntelligenceFeed = () => {
                             animation: isLive ? 'pulse 1.5s infinite' : 'none'
                         }}
                     />
-                    <span className="truncate">
-                        {isLive ? '● EXTENSION ACTIVE — CAPTURING AUDIO' : extStatus === 'STOPPED' ? '■ SESSION ENDED — OFFLINE' : '○ AWAITING EXTENSION ACTIVATION'}
+                    <span className="truncate hidden sm:inline">
+                        {isLive ? '● ENGINE ACTIVE — CAPTURING' : extStatus === 'STOPPED' ? '■ SESSION ENDED' : '○ ENGINE OFFLINE'}
                     </span>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-3 shrink-0">
+                    <div className="flex items-center gap-2 border-r border-current/20 pr-3">
+                        <span className="hidden md:inline">{isLive ? 'STREAM_ON' : 'STREAM_OFF'}</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" className="sr-only peer" checked={isLive} onChange={handleToggle} />
+                            <div className="w-8 h-4 bg-surface-container-high peer-focus:outline-none border border-outline-variant/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-black after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-outline-variant/50 after:border-outline-variant/50 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary peer-checked:after:bg-black"></div>
+                        </label>
+                    </div>
                     {isLive && <Radio size={10} className="animate-pulse" />}
                     {!isLive && <WifiOff size={10} className="opacity-40" />}
                     {/* Mobile fullscreen button */}
                     <button
                         onClick={openFullscreen}
-                        className="md:hidden flex items-center gap-1 text-[9px] uppercase tracking-widest border border-current/30 px-2 py-1 hover:bg-current/10 transition-colors ml-2"
+                        className="md:hidden flex items-center gap-1 text-[9px] uppercase tracking-widest border border-current/30 px-2 py-1 hover:bg-current/10 transition-colors ml-1"
                         title="Fullscreen terminal"
                     >
                         <Maximize2 size={10} /> EXPAND
