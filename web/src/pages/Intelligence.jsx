@@ -101,7 +101,51 @@ const IntelligenceFeed = () => {
         };
     }, []);
 
-    const clearTerminal = () => setLogLines([]);
+    const clearTerminal = () => {
+        setLogLines([]);
+        window.postMessage({ type: 'CLEAR_CACHE' }, '*');
+    };
+
+    const exportLog = () => {
+        if (logLines.length === 0) {
+            alert('No telemetry data available to export.');
+            return;
+        }
+
+        const dateString = new Date().toISOString().replace(/[:.]/g, '-');
+        let content = `SPECTAGLINT AI COMPANION | TELEMETRY LOG EXPORT\n`;
+        content += `Session Generated: ${new Date().toLocaleString()}\n`;
+        content += `Protocol Mode: ${serviceMode}\n`;
+        content += `====================================================\n\n`;
+
+        logLines.forEach(line => {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = line.html;
+            const plainText = tempDiv.textContent || tempDiv.innerText || '';
+            let timestamp = '';
+
+            // Only parse timestamp from timestamp-based items, else fallback
+            if (!isNaN(new Date(line.id).getTime())) {
+                timestamp = `[${new Date(line.id).toISOString().substr(11, 8)}] `;
+            }
+
+            content += `${timestamp}${plainText.trim()}\n`;
+        });
+
+        content += `\n====================================================\n`;
+        content += `END OF LOGS. Packets Processed: ${logLines.length}`;
+
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `spectaglint_export_${dateString}.txt`;
+        document.body.appendChild(a);
+        a.click();
+
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
 
     if (loading) return <TechLoader />;
 
@@ -286,7 +330,7 @@ const IntelligenceFeed = () => {
 
                 {/* Right: Active Telemetry / Trans Matrix */}
                 <div className="md:col-span-5 flex flex-col gap-3">
-                    <ActiveSessionPanel logLines={logLines} isLive={isLive} onClear={clearTerminal} serviceMode={serviceMode} setServiceMode={setServiceMode} />
+                    <ActiveSessionPanel logLines={logLines} isLive={isLive} onClear={clearTerminal} serviceMode={serviceMode} setServiceMode={setServiceMode} onExport={exportLog} />
                 </div>
             </div>
 
@@ -300,7 +344,7 @@ const IntelligenceFeed = () => {
                 </div>
 
                 {/* Mobile Session Metrics */}
-                <ActiveSessionPanel logLines={logLines} isLive={isLive} onClear={clearTerminal} serviceMode={serviceMode} setServiceMode={setServiceMode} />
+                <ActiveSessionPanel logLines={logLines} isLive={isLive} onClear={clearTerminal} serviceMode={serviceMode} setServiceMode={setServiceMode} onExport={exportLog} />
             </div>
 
             {/* ── MOBILE FULLSCREEN SLIDE-IN MODAL */}
@@ -375,7 +419,7 @@ const TerminalHeader = ({ isLive, onClear }) => (
 );
 
 // ── Right panel: Active Session Analytics & Routing
-const ActiveSessionPanel = ({ logLines, isLive, onClear, serviceMode, setServiceMode }) => {
+const ActiveSessionPanel = ({ logLines, isLive, onClear, serviceMode, setServiceMode, onExport }) => {
     const MODES = [
         { id: 'LIVE_ANSWERS', icon: 'chat', label: 'LIVE AI ANSWERS', desc: 'Real-time Q&A via Ext.' },
         { id: 'LIVE_TRANSCRIPTION', icon: 'closed_caption', label: 'LIVE TRANSCRIPTION', desc: 'Real-time text feed' },
@@ -450,7 +494,7 @@ const ActiveSessionPanel = ({ logLines, isLive, onClear, serviceMode, setService
 
             {/* QUICK CONTROLS */}
             <div className="grid grid-cols-2 gap-2 shrink-0">
-                <button className="flex items-center justify-center gap-2 py-3 border border-outline-variant/20 text-on-surface-variant text-[10px] font-black uppercase tracking-widest hover:text-primary hover:border-primary/50 transition-all bg-[#0a0f0d] active:scale-[0.98] group">
+                <button onClick={onExport} className="flex items-center justify-center gap-2 py-3 border border-outline-variant/20 text-on-surface-variant text-[10px] font-black uppercase tracking-widest hover:text-primary hover:border-primary/50 transition-all bg-[#0a0f0d] active:scale-[0.98] group">
                     <span className="material-symbols-outlined text-sm group-hover:-translate-y-0.5 transition-transform">download</span>
                     EXPORT_LOG
                 </button>
