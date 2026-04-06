@@ -201,7 +201,11 @@ const IntelligenceFeed = () => {
 
         try {
             const { supabase } = await import('../lib/supabase');
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+            if (sessionError || !session) {
+                throw new Error('Authentication locked. Please re-login to authorize transcription.');
+            }
 
             const formData = new FormData();
             formData.append('audioFile', file);
@@ -224,7 +228,7 @@ const IntelligenceFeed = () => {
             setUploadProgress(100);
             setIsUploading(false);
 
-            if (!response.ok) throw new Error(data.message || 'Data processing failed');
+            if (!response.ok) throw new Error(data.message || data.error || JSON.stringify(data) || 'Data processing failed');
 
             // Render the blocks directly to the terminal!
             const newLines = data.blocks.map(b => ({ id: Date.now() + Math.random(), html: b.html }));
