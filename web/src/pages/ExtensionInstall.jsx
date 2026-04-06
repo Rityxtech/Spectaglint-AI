@@ -78,7 +78,7 @@ const ExtensionInstall = () => {
             Download Extension
           </h2>
           <p className="text-on-surface-variant mb-4">
-            Since the extension is not yet published to the Chrome Web Store, you'll need to install it manually.
+            Download the latest extension package to begin tracking and analyzing your live meetings.
           </p>
           <button
             onClick={handleDownload}

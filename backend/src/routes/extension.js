@@ -91,13 +91,9 @@ router.get('/install-info', (req, res) => {
   res.json({
     downloadUrl: `${req.protocol}://${req.get('host')}/extension/download`,
     instructions: [
-      '1. Download the extension ZIP file',
-      '2. Extract the ZIP file to a folder',
-      '3. Open Chrome and go to chrome://extensions/',
-      '4. Enable "Developer mode" (top right toggle)',
-      '5. Click "Load unpacked" button',
-      '6. Select the extracted spectaglint-extension folder',
-      '7. The extension should now be installed and active'
+      '1. Download and extract the extension ZIP file',
+      '2. Navigate to chrome://extensions/ and enable "Developer mode"',
+      '3. Click "Load unpacked" and select the extracted folder'
     ],
     version: '1.0.0',
     name: 'Spectaglint AI Companion'
