@@ -202,7 +202,7 @@ Always reply with ONLY this exact JSON:
         state.lastNormalized = normalized;
 
         // Broadcast Heard statement
-        pushLog(userId, `<span style="color:#94a3b8">🎤 Heard:</span> <span style="color:#f8fafc">"${combined}"</span>`);
+        pushLog(userId, `<div style="margin-top:12px; margin-bottom:6px;"><span style="color:#10b981; font-weight:900; letter-spacing:0.1em; text-transform:uppercase;">🎤 Heard:</span> <span style="color:#8eff71; font-weight:bold; padding-left:4px;">"${combined}"</span></div>`);
 
         if (parsed.isQuestion && parsed.answer) {
             // Find or create "Extension Session - YYYY-MM-DD"

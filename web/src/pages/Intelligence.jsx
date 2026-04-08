@@ -485,7 +485,7 @@ const IntelligenceFeed = () => {
                 {/* Mobile terminal — compact height */}
                 <div className="bg-[#030504] border border-outline-variant/20 flex flex-col">
                     <TerminalHeader isLive={isLive} onClear={clearTerminal} />
-                    <TerminalContent scrollRef={mobileTerminalRef} height="55vw" />
+                    <TerminalContent scrollRef={mobileTerminalRef} height="60vh" />
                 </div>
 
                 {/* Mobile Session Metrics */}
