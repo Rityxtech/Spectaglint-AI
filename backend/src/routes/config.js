@@ -49,7 +49,7 @@ router.get('/', async (req, res) => {
 // PUT /config
 router.put('/', async (req, res) => {
     const { system_prompt, modifier_direct_only, modifier_translate_spanish, modifier_detect_jargon, inference_model } = req.body;
-    const ALLOWED_MODELS = ['llama3-8b-8192', 'llama3-70b-8192', 'mixtral-8x7b-32768'];
+    const ALLOWED_MODELS = ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile', 'mixtral-8x7b-32768'];
 
     if (inference_model && !ALLOWED_MODELS.includes(inference_model)) {
         return res.status(400).json({ error: 'INVALID_MODEL', allowed: ALLOWED_MODELS });

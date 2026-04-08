@@ -12,7 +12,7 @@ const COST_PER_QUERY = 1; // coins
  * @param {string} model - Groq model identifier
  * @returns {{ answer: string, responseTimeMs: number, model: string }}
  */
-const getAIAnswer = async (question, systemPrompt, model = 'llama3-8b-8192') => {
+const getAIAnswer = async (question, systemPrompt, model = 'llama-3.1-8b-instant') => {
     const start = Date.now();
 
     const completion = await groq.chat.completions.create({
@@ -70,7 +70,7 @@ const analyzeBulkTranscript = async (transcriptText) => {
                 content: transcriptText
             }
         ],
-        model: 'llama3-8b-8192',
+        model: 'llama-3.1-8b-instant',
         temperature: 0.3,
         max_tokens: 2048,
         stream: false

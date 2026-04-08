@@ -25,7 +25,7 @@ router.post('/respond', async (req, res) => {
 
         // 4. Call Groq
         const systemPrompt = config?.system_prompt || 'Answer concisely and accurately in under 3 sentences.';
-        const model = config?.inference_model || 'llama3-8b-8192';
+        const model = config?.inference_model || 'llama-3.1-8b-instant';
         const { answer, responseTimeMs } = await getAIAnswer(question, systemPrompt, model);
 
         // 5. Compute confidence
