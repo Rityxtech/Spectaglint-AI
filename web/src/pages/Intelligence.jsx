@@ -249,6 +249,11 @@ const IntelligenceFeed = () => {
     };
 
     // ── Dynamic terminal body content based on selected Operation Protocol
+    // NOTE: defined as a stable inner render call — see TerminalContent below the component.
+    const terminalContentProps = { scrollRef: terminalRef, height: undefined, className: "flex-1", logLines, serviceMode, isLive, isUploading, fileInputRef, handleFileSelect, clearTerminal };
+    const mobileTerminalContentProps = { scrollRef: mobileTerminalRef, height: "55vw", className: "", logLines, serviceMode, isLive, isUploading, fileInputRef, handleFileSelect, clearTerminal };
+
+    // keep the inline for compatibility — the actual component is defined outside ↓
     const TerminalContent = ({ scrollRef, height, className = "" }) => {
         if (serviceMode === 'LIVE_ANSWERS') {
             return (
@@ -319,12 +324,14 @@ const IntelligenceFeed = () => {
             const themeButtonClasses = isTranscription
                 ? 'border-tertiary text-tertiary hover:bg-tertiary hover:text-black'
                 : 'border-primary text-primary hover:bg-primary hover:text-black';
+            const themeBorderColor = isTranscription ? 'border-tertiary/40' : 'border-primary/40';
 
             return (
                 <div ref={scrollRef} className={`overflow-y-auto p-3 md:p-4 flex flex-col font-['JetBrains_Mono'] text-xs ${className}`} style={height ? { height } : undefined}>
                     <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="audio/*" className="hidden" />
 
-                    {!isUploading && (
+                    {/* ── Upload dropzone: only shown when no results yet and not uploading */}
+                    {!isUploading && logLines.length === 0 && (
                         <div onClick={() => fileInputRef.current?.click()} className={`flex-1 flex flex-col items-center justify-center min-h-[140px] md:min-h-[250px] border-2 border-dashed border-outline-variant/20 ${themeBorderHover} ${themeBgHover} transition-all cursor-pointer group p-4 md:p-8 text-center rounded-sm`}>
                             <span className={`material-symbols-outlined text-3xl md:text-5xl mb-2 md:mb-4 transition-transform group-hover:-translate-y-1 ${themeText}`}>
                                 {isTranscription ? 'description' : 'neurology'}
@@ -344,7 +351,7 @@ const IntelligenceFeed = () => {
                         </div>
                     )}
 
-                    {/* Progress area */}
+                    {/* ── Processing spinner */}
                     {isUploading && (
                         <div className="flex-1 flex flex-col items-center justify-center animate-pulse min-h-[140px] md:min-h-[250px] border border-outline-variant/20 p-4 md:p-8 bg-[#0a0f0d]">
                             <span className={`material-symbols-outlined text-3xl md:text-5xl mb-3 md:mb-4 animate-spin ${themeText}`}>autorenew</span>
@@ -357,7 +364,37 @@ const IntelligenceFeed = () => {
                         </div>
                     )}
 
-                    {/* Standby Card placeholder */}
+                    {/* ── Results: rendered after successful upload */}
+                    {!isUploading && logLines.length > 0 && (
+                        <>
+                            {/* Toolbar row */}
+                            <div className={`flex items-center justify-between mb-2 md:mb-3 pb-2 border-b ${themeBorderColor} shrink-0`}>
+                                <div className={`text-[9px] uppercase tracking-widest font-black ${themeText}`}>
+                                    {logLines.length} BLOCK{logLines.length !== 1 ? 'S' : ''} DECODED
+                                </div>
+                                <button
+                                    onClick={() => { clearTerminal(); }}
+                                    className={`text-[8px] uppercase tracking-widest border px-2.5 py-1 transition-colors ${themeButtonClasses}`}
+                                >
+                                    ↑ NEW UPLOAD
+                                </button>
+                            </div>
+
+                            {/* Result blocks */}
+                            <div className="space-y-1.5 md:space-y-2">
+                                {logLines.map(line => (
+                                    <div
+                                        key={line.id}
+                                        className={`leading-relaxed border-l-2 border-outline-variant/10 pl-3 py-0.5 transition-all ${isTranscription ? 'hover:border-tertiary/30' : 'hover:border-primary/30'
+                                            }`}
+                                        dangerouslySetInnerHTML={{ __html: line.html }}
+                                    />
+                                ))}
+                            </div>
+                        </>
+                    )}
+
+                    {/* ── Standby placeholder: only when fresh with no results */}
                     {!isUploading && logLines.length === 0 && (
                         <div className="mt-2 md:mt-4 p-2.5 md:p-4 border border-outline-variant/10 bg-[#0a0f0d] flex items-center justify-between opacity-50 grayscale pointer-events-none">
                             <div className="flex items-center gap-2 md:gap-3">
