@@ -16,7 +16,9 @@ const IntelligenceFeed = () => {
     const [loading, setLoading] = useState(false);
     const [logLines, setLogLines] = useState([]);
     const [serviceMode, setServiceMode] = useState('LIVE_ANSWERS');
+    const prevServiceMode = useRef('LIVE_ANSWERS');
     const [extStatus, setExtStatus] = useState('IDLE'); // 'IDLE' | 'LIVE' | 'STOPPED'
+    const [extLinked, setExtLinked] = useState(null); // null=checking, true=installed, false=not installed
     const [actionToast, setActionToast] = useState({ open: false, type: 'success', title: '', desc: '' });
 
     // File upload states
@@ -50,6 +52,37 @@ const IntelligenceFeed = () => {
         }, 300);
     };
 
+    // ── Extension presence detection (PING/PONG via content.js bridge) ──
+    // We send a PING_EXTENSION message; content.js replies with PONG_EXTENSION within ~100ms.
+    // If no PONG arrives within 1.5s, we know the extension is not installed.
+    useEffect(() => {
+        let resolved = false;
+        const timeout = setTimeout(() => {
+            if (!resolved) {
+                resolved = true;
+                setExtLinked(false); // no pong received = not installed
+            }
+        }, 1500);
+
+        const handlePong = (event) => {
+            if (event.data?.type === 'PONG_EXTENSION' && !resolved) {
+                resolved = true;
+                clearTimeout(timeout);
+                setExtLinked(true);
+                // Also hydrate isListening status from extension's local storage
+                if (event.data.isListening) setExtStatus('LIVE');
+            }
+        };
+
+        window.addEventListener('message', handlePong);
+        window.postMessage({ type: 'PING_EXTENSION' }, '*');
+
+        return () => {
+            window.removeEventListener('message', handlePong);
+            clearTimeout(timeout);
+        };
+    }, []);
+
     // ── Auto-scroll both desktop and mobile terminals on new entries
     useEffect(() => {
         if (terminalRef.current) {
@@ -79,6 +112,19 @@ const IntelligenceFeed = () => {
                 }
             }, '*');
 
+            // ── Fetch persisted extension status from backend (fixes reload bug) ──
+            // This is the server-side truth, independent of the SSE connection.
+            try {
+                const statusRes = await fetch(`${backendUrl}/live/extension-status`, {
+                    headers: { 'Authorization': `Bearer ${session.access_token}` }
+                });
+                if (statusRes.ok) {
+                    const statusData = await statusRes.json();
+                    setExtStatus(statusData.status || 'STOPPED');
+                    if (statusData.linked) setExtLinked(true); // extension has checked in before
+                }
+            } catch (_) { /* non-fatal */ }
+
             eventSource = new EventSource(`${backendUrl}/live/stream?token=${session.access_token}`);
 
             eventSource.onmessage = (event) => {
@@ -98,7 +144,6 @@ const IntelligenceFeed = () => {
 
             eventSource.onerror = (err) => {
                 console.error('[SSE] Connection error', err);
-                // SSE will automatically attempt reconnection
             };
         };
 
@@ -119,6 +164,17 @@ const IntelligenceFeed = () => {
             desc: 'Internal telemetry buffer and visual state have been securely wiped.'
         });
     };
+
+    // ── Clear terminal when switching protocol modes to prevent bleed-over ──
+    // e.g. live chat logs must not appear in FILE_ANSWERS dropzone view
+    useEffect(() => {
+        if (prevServiceMode.current !== serviceMode) {
+            prevServiceMode.current = serviceMode;
+            setLogLines([]);
+            setIsUploading(false);
+            setUploadProgress(0);
+        }
+    }, [serviceMode]);
 
     const exportLog = () => {
         if (logLines.length === 0) {
@@ -176,8 +232,14 @@ const IntelligenceFeed = () => {
     if (loading) return <TechLoader />;
 
     const isLive = extStatus === 'LIVE';
+    const isCheckingExt = extLinked === null;
 
     const handleToggle = (e) => {
+        if (!extLinked) {
+            // Shouldn't be reachable, but guard anyway
+            setActionToast({ open: true, type: 'error', title: 'EXTENSION NOT FOUND', desc: 'Install the Spectaglint browser extension to start capturing audio.' });
+            return;
+        }
         const turningOn = e.target.checked;
         if (turningOn) {
             window.postMessage({ type: 'START_EAR', payload: { protocol: serviceMode } }, '*');
@@ -248,13 +310,17 @@ const IntelligenceFeed = () => {
         }
     };
 
-    // ── Dynamic terminal body content based on selected Operation Protocol
-    // NOTE: defined as a stable inner render call — see TerminalContent below the component.
-    const terminalContentProps = { scrollRef: terminalRef, height: undefined, className: "flex-1", logLines, serviceMode, isLive, isUploading, fileInputRef, handleFileSelect, clearTerminal };
-    const mobileTerminalContentProps = { scrollRef: mobileTerminalRef, height: "55vw", className: "", logLines, serviceMode, isLive, isUploading, fileInputRef, handleFileSelect, clearTerminal };
+    // TerminalContent is defined OUTSIDE this component (below IntelligenceFeed)
+    // to ensure React never treats it as a new component type on re-render.
+    // All dynamic values are passed as explicit props.
+    const terminalProps = { logLines, serviceMode, isLive, isUploading, fileInputRef, handleFileSelect, clearTerminal };
 
-    // keep the inline for compatibility — the actual component is defined outside ↓
-    const TerminalContent = ({ scrollRef, height, className = "" }) => {
+    // ── placeholder so jsx below still compiles — actual component defined at bottom of file
+    const _unused = null;
+    void _unused;
+
+    // [── INLINE REMOVED — see TerminalContent component at bottom of file ──]
+    const _TerminalContent_removed = ({ scrollRef, height, className = "" }) => {
         if (serviceMode === 'LIVE_ANSWERS') {
             return (
                 <div ref={scrollRef} className={`overflow-y-auto p-3 md:p-4 space-y-1.5 font-['JetBrains_Mono'] text-xs ${className}`} style={height ? { height } : undefined}>
@@ -411,7 +477,7 @@ const IntelligenceFeed = () => {
             );
         }
         return null;
-    };
+    }; // end _TerminalContent_removed (not used)
 
     return (
         <div className="w-full flex flex-col gap-[10px] md:gap-4 flex-1">
@@ -424,33 +490,66 @@ const IntelligenceFeed = () => {
             />
 
             {/* ── STATUS BANNER */}
-            <div className={`flex items-center justify-between px-3 md:px-4 py-2 md:py-2.5 border font-['JetBrains_Mono'] text-[9px] md:text-[10px] uppercase tracking-widest transition-all duration-500 ${isLive
-                ? 'bg-primary/5 border-primary/40 text-primary'
-                : 'bg-red-900/10 border-red-800/40 text-red-400'
+            <div className={`flex items-center justify-between px-3 md:px-4 py-2 md:py-2.5 border font-['JetBrains_Mono'] text-[9px] md:text-[10px] uppercase tracking-widest transition-all duration-500 ${isCheckingExt
+                ? 'bg-surface-container border-outline-variant/20 text-on-surface-variant/50'
+                : extLinked === false
+                    ? 'bg-yellow-900/10 border-yellow-600/40 text-yellow-400'
+                    : isLive
+                        ? 'bg-primary/5 border-primary/40 text-primary'
+                        : 'bg-red-900/10 border-red-800/40 text-red-400'
                 }`}>
                 <div className="flex items-center gap-2">
                     <span
                         className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full shrink-0"
                         style={{
-                            backgroundColor: isLive ? '#8eff71' : '#ef4444',
-                            boxShadow: isLive ? '0 0 8px rgba(142,255,113,0.8)' : '0 0 8px rgba(239,68,68,0.5)',
-                            animation: isLive ? 'pulse 1.5s infinite' : 'pulse 2s infinite'
+                            backgroundColor: isCheckingExt ? '#64748b' : extLinked === false ? '#ca8a04' : isLive ? '#8eff71' : '#ef4444',
+                            boxShadow: isCheckingExt ? 'none' : extLinked === false ? '0 0 8px rgba(202,138,4,0.6)' : isLive ? '0 0 8px rgba(142,255,113,0.8)' : '0 0 8px rgba(239,68,68,0.5)',
+                            animation: isCheckingExt ? 'pulse 1s infinite' : isLive ? 'pulse 1.5s infinite' : 'pulse 2s infinite'
                         }}
                     />
                     <span className="truncate hidden sm:inline">
-                        {isLive ? '● ENGINE ACTIVE — CAPTURING' : '■ ENGINE OFFLINE — ACTIVATE TO BEGIN'}
+                        {isCheckingExt
+                            ? 'SCANNING FOR EXTENSION...'
+                            : extLinked === false
+                                ? '⚠ EXTENSION NOT DETECTED — INSTALL REQUIRED'
+                                : isLive ? '● ENGINE ACTIVE — CAPTURING' : '■ ENGINE ONLINE — ACTIVATE TO BEGIN'
+                        }
+                    </span>
+                    {/* Mobile short label */}
+                    <span className="truncate sm:hidden text-[8px]">
+                        {isCheckingExt ? 'SCANNING...' : extLinked === false ? '⚠ NOT INSTALLED' : isLive ? '● LIVE' : '■ OFFLINE'}
                     </span>
                 </div>
+
                 <div className="flex items-center gap-3 shrink-0">
-                    <div className="flex items-center gap-2 md:gap-3 border-r border-current/20 pr-3">
-                        <span className={`font-black text-[10px] md:text-sm tracking-widest ${isLive ? 'text-primary' : 'text-on-surface'}`}>{isLive ? 'STREAM_ON' : 'STREAM_OFF'}</span>
-                        <label className="relative inline-flex items-center cursor-pointer ml-1 md:ml-2">
-                            <input type="checkbox" className="sr-only peer" checked={isLive} onChange={handleToggle} />
-                            <div className="w-12 h-6 md:w-16 md:h-8 bg-surface-container-highest peer-focus:outline-none border border-outline-variant/40 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-[#0a0f0d] after:content-[''] after:absolute after:top-[2px] after:left-[2px] md:after:left-[3px] after:bg-outline-variant/50 after:border-outline-variant/50 after:border after:rounded-full after:h-5 after:w-5 md:after:h-7 md:after:w-7 after:transition-all peer-checked:bg-primary peer-checked:after:bg-[#0a0f0d] shadow-[inset_0_2px_5px_rgba(0,0,0,0.5)] cursor-pointer"></div>
-                        </label>
-                    </div>
-                    {isLive && <Radio size={12} className="animate-pulse hidden md:block" />}
-                    {!isLive && <WifiOff size={12} className="opacity-40 hidden md:block" />}
+                    {/* ── Extension installed: show normal toggle ── */}
+                    {!isCheckingExt && extLinked && (
+                        <div className="flex items-center gap-2 md:gap-3 border-r border-current/20 pr-3">
+                            <span className={`font-black text-[10px] md:text-sm tracking-widest ${isLive ? 'text-primary' : 'text-on-surface'}`}>
+                                {isLive ? 'STREAM_ON' : 'STREAM_OFF'}
+                            </span>
+                            <label className="relative inline-flex items-center cursor-pointer ml-1 md:ml-2">
+                                <input type="checkbox" className="sr-only peer" checked={isLive} onChange={handleToggle} />
+                                <div className="w-12 h-6 md:w-16 md:h-8 bg-surface-container-highest peer-focus:outline-none border border-outline-variant/40 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-[#0a0f0d] after:content-[''] after:absolute after:top-[2px] after:left-[2px] md:after:left-[3px] after:bg-outline-variant/50 after:border-outline-variant/50 after:border after:rounded-full after:h-5 after:w-5 md:after:h-7 md:after:w-7 after:transition-all peer-checked:bg-primary peer-checked:after:bg-[#0a0f0d] shadow-[inset_0_2px_5px_rgba(0,0,0,0.5)] cursor-pointer"></div>
+                            </label>
+                        </div>
+                    )}
+
+                    {/* ── Extension not installed: show install CTA ── */}
+                    {!isCheckingExt && extLinked === false && (
+                        <a
+                            href="/install"
+                            className="flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 border border-yellow-500/50 text-yellow-400 text-[8px] md:text-[9px] font-black uppercase tracking-widest hover:bg-yellow-400/10 transition-colors"
+                        >
+                            <span className="material-symbols-outlined text-[12px] md:text-[14px]">extension</span>
+                            <span className="hidden sm:inline">INSTALL EXTENSION</span>
+                            <span className="sm:hidden">INSTALL</span>
+                        </a>
+                    )}
+
+                    {isLive && extLinked && <Radio size={12} className="animate-pulse hidden md:block" />}
+                    {!isLive && extLinked && <WifiOff size={12} className="opacity-40 hidden md:block" />}
+
                     {/* Mobile fullscreen button */}
                     <button
                         onClick={openFullscreen}
@@ -469,7 +568,7 @@ const IntelligenceFeed = () => {
                 <div className="md:col-span-7 flex flex-col h-full">
                     <div className="bg-[#030504] border border-outline-variant/20 flex flex-col h-full">
                         <TerminalHeader isLive={isLive} onClear={clearTerminal} />
-                        <TerminalContent scrollRef={terminalRef} className="flex-1" />
+                        <TerminalContent scrollRef={terminalRef} className="flex-1" {...terminalProps} />
                     </div>
                 </div>
 
@@ -485,7 +584,7 @@ const IntelligenceFeed = () => {
                 {/* Mobile terminal — compact height */}
                 <div className="bg-[#030504] border border-outline-variant/20 flex flex-col">
                     <TerminalHeader isLive={isLive} onClear={clearTerminal} />
-                    <TerminalContent scrollRef={mobileTerminalRef} height="60vh" />
+                    <TerminalContent scrollRef={mobileTerminalRef} height="60vh" {...terminalProps} />
                 </div>
 
                 {/* Mobile Session Metrics */}
@@ -532,7 +631,7 @@ const IntelligenceFeed = () => {
                         </div>
 
                         {/* Full terminal content in modal */}
-                        <TerminalContent scrollRef={mobileTerminalRef} className="flex-1" />
+                        <TerminalContent scrollRef={mobileTerminalRef} className="flex-1" {...terminalProps} />
 
                     </div>
                 </div>
@@ -564,6 +663,142 @@ const IntelligenceFeed = () => {
             )}
         </div>
     );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TerminalContent — defined OUTSIDE IntelligenceFeed intentionally.
+// If defined inside the parent, React recreates the component type on every
+// render, causing full unmount → broken refs, flicker, lost scroll position.
+// All state is passed as explicit props; the component itself is pure/stable.
+// ─────────────────────────────────────────────────────────────────────────────
+const TerminalContent = ({
+    scrollRef, height, className = '',
+    logLines, serviceMode, isLive, isUploading, fileInputRef, handleFileSelect, clearTerminal
+}) => {
+    if (serviceMode === 'LIVE_ANSWERS') {
+        return (
+            <div ref={scrollRef} className={`overflow-y-auto p-3 md:p-4 space-y-1.5 font-['JetBrains_Mono'] text-xs ${className}`} style={height ? { height } : undefined}>
+                {logLines.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full min-h-[120px] md:min-h-[200px] text-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-on-surface-variant/15 mb-2 md:mb-3"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                        <div className="text-[9px] md:text-[10px] text-on-surface-variant/30 uppercase tracking-widest px-2">
+                            {isLive ? 'CONNECTED — WAITING FOR AUDIO INPUT...' : 'TERMINAL IDLE — CAPTURE ENGINE OFFLINE'}
+                        </div>
+                        {isLive && (
+                            <div className="flex items-center gap-1.5 mt-2 md:mt-3 text-primary/50 text-[8px] md:text-[9px]">
+                                <span className="animate-pulse">▋</span> LISTENING...
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    logLines.map(line => (
+                        <div key={line.id} className="leading-relaxed border-l-2 border-outline-variant/10 pl-3 py-0.5 hover:border-primary/30 transition-all" dangerouslySetInnerHTML={{ __html: line.html }} />
+                    ))
+                )}
+                {isLive && <div className="text-primary/70 text-[11px] pl-3 flex items-center gap-1 mt-1"><span className="animate-pulse">▋</span></div>}
+            </div>
+        );
+    }
+
+    if (serviceMode === 'LIVE_TRANSCRIPTION') {
+        return (
+            <div ref={scrollRef} className={`overflow-y-auto p-3 md:p-5 font-mono text-xs tracking-wide ${className}`} style={height ? { height } : undefined}>
+                {logLines.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full min-h-[120px] md:min-h-[200px] text-center font-['JetBrains_Mono']">
+                        <span className="material-symbols-outlined text-3xl md:text-4xl text-on-surface-variant/15 mb-2 md:mb-3">graphic_eq</span>
+                        <div className="text-[9px] md:text-[10px] text-on-surface-variant/30 uppercase tracking-widest md:mb-1 px-2">
+                            {isLive ? 'AWAITING VOCAL CAPTURE STREAM' : 'LIVE TRANSCRIPTION ENGINE OFFLINE'}
+                        </div>
+                        <div className="text-[7px] md:text-[8px] text-on-surface-variant/20 uppercase tracking-widest mt-1 md:mt-0">CONTINUOUS RAW TEXT OUTPUT</div>
+                    </div>
+                ) : (
+                    <div className="text-on-surface-variant/80 font-['JetBrains_Mono'] leading-relaxed space-y-2 md:space-y-3">
+                        {logLines.map(line => (
+                            <div key={line.id} className="flex gap-3 md:gap-4 p-1.5 md:p-2 hover:bg-surface-container-high/30 transition-colors border-l-2 border-transparent hover:border-tertiary/40">
+                                <span className="text-[8.5px] md:text-[9px] text-tertiary/40 shrink-0 mt-0.5">[{new Date().toISOString().substr(11, 8)}]</span>
+                                <span dangerouslySetInnerHTML={{ __html: line.html }} />
+                            </div>
+                        ))}
+                    </div>
+                )}
+                {isLive && (
+                    <div className="text-tertiary text-[9px] md:text-[10px] font-['JetBrains_Mono'] flex items-center gap-2 mt-3 md:mt-4 ml-12 md:ml-[72px]">
+                        <span className="w-1 md:w-1.5 h-1 md:h-1.5 rounded-full bg-tertiary animate-pulse"></span> TRANSCRIBING...
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    if (serviceMode === 'FILE_ANSWERS' || serviceMode === 'FILE_TRANSCRIPTION') {
+        const isTranscription = serviceMode === 'FILE_TRANSCRIPTION';
+        const themeText = isTranscription ? 'text-tertiary' : 'text-primary';
+        const themeBorderHover = isTranscription ? 'hover:border-tertiary/40' : 'hover:border-primary/40';
+        const themeBgHover = isTranscription ? 'hover:bg-tertiary/5' : 'hover:bg-primary/5';
+        const themeButtonCls = isTranscription
+            ? 'border-tertiary text-tertiary hover:bg-tertiary hover:text-black'
+            : 'border-primary  text-primary  hover:bg-primary  hover:text-black';
+        const themeBorderColor = isTranscription ? 'border-tertiary/40' : 'border-primary/40';
+
+        return (
+            <div ref={scrollRef} className={`overflow-y-auto p-3 md:p-4 flex flex-col font-['JetBrains_Mono'] text-xs ${className}`} style={height ? { height } : undefined}>
+                <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="audio/*" className="hidden" />
+
+                {/* Dropzone — only when idle and no results */}
+                {!isUploading && logLines.length === 0 && (
+                    <div onClick={() => fileInputRef.current?.click()} className={`flex-1 flex flex-col items-center justify-center min-h-[140px] md:min-h-[250px] border-2 border-dashed border-outline-variant/20 ${themeBorderHover} ${themeBgHover} transition-all cursor-pointer group p-4 md:p-8 text-center rounded-sm`}>
+                        <span className={`material-symbols-outlined text-3xl md:text-5xl mb-2 md:mb-4 transition-transform group-hover:-translate-y-1 ${themeText}`}>{isTranscription ? 'description' : 'neurology'}</span>
+                        <div className={`text-[11px] md:text-sm font-black uppercase tracking-widest mb-1 md:mb-2 ${themeText}`}>UPLOAD AUDIO MANIFEST</div>
+                        <div className="text-[8px] md:text-[10px] text-on-surface-variant/50 tracking-wider mb-3 md:mb-6 max-w-[280px]">
+                            Drop your recorded {isTranscription ? 'audio file for bulk high-fidelity transcription' : 'meeting here to extract Q&A insights'} or click to browse.
+                        </div>
+                        <button className={`px-4 md:px-5 py-2 md:py-2.5 bg-transparent border text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-colors ${themeButtonCls}`}>SELECT LOCAL FILE</button>
+                        <div className="text-[7px] md:text-[8px] text-on-surface-variant/30 mt-2 md:mt-4 uppercase tracking-widest">SUPPORTED FORMATS: .MP3 .WAV .M4A</div>
+                    </div>
+                )}
+
+                {/* Uploading spinner */}
+                {isUploading && (
+                    <div className="flex-1 flex flex-col items-center justify-center animate-pulse min-h-[140px] md:min-h-[250px] border border-outline-variant/20 p-4 md:p-8 bg-[#0a0f0d]">
+                        <span className={`material-symbols-outlined text-3xl md:text-5xl mb-3 md:mb-4 animate-spin ${themeText}`}>autorenew</span>
+                        <div className="text-[10px] md:text-[12px] text-on-surface font-black uppercase tracking-widest mb-1">PROCESSING SECURE PAYLOAD...</div>
+                        <div className="text-[8px] md:text-[9px] text-on-surface-variant/50 tracking-widest uppercase text-center max-w-[250px]">Uploading and decoding structural audio data. Please keep window open.</div>
+                    </div>
+                )}
+
+                {/* Results */}
+                {!isUploading && logLines.length > 0 && (
+                    <>
+                        <div className={`flex items-center justify-between mb-2 md:mb-3 pb-2 border-b ${themeBorderColor} shrink-0`}>
+                            <div className={`text-[9px] uppercase tracking-widest font-black ${themeText}`}>{logLines.length} BLOCK{logLines.length !== 1 ? 'S' : ''} DECODED</div>
+                            <button onClick={clearTerminal} className={`text-[8px] uppercase tracking-widest border px-2.5 py-1 transition-colors ${themeButtonCls}`}>↑ NEW UPLOAD</button>
+                        </div>
+                        <div className="space-y-1.5 md:space-y-2">
+                            {logLines.map(line => (
+                                <div key={line.id} className={`leading-relaxed border-l-2 border-outline-variant/10 pl-3 py-0.5 transition-all ${isTranscription ? 'hover:border-tertiary/30' : 'hover:border-primary/30'}`} dangerouslySetInnerHTML={{ __html: line.html }} />
+                            ))}
+                        </div>
+                    </>
+                )}
+
+                {/* Standby card */}
+                {!isUploading && logLines.length === 0 && (
+                    <div className="mt-2 md:mt-4 p-2.5 md:p-4 border border-outline-variant/10 bg-[#0a0f0d] flex items-center justify-between opacity-50 grayscale pointer-events-none">
+                        <div className="flex items-center gap-2 md:gap-3">
+                            <span className="material-symbols-outlined text-[16px] md:text-[24px] text-on-surface-variant">audio_file</span>
+                            <div>
+                                <div className="text-[9px] md:text-[10px] text-on-surface font-bold uppercase tracking-widest">AWAITING_UPLOAD.WAV</div>
+                                <div className="text-[7px] md:text-[8px] text-on-surface-variant/50 uppercase">0 MB / 0 MB</div>
+                            </div>
+                        </div>
+                        <div className="text-[8px] md:text-[9px] text-on-surface-variant/40">STANDBY</div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    return null;
 };
 
 // ── Terminal header bar (shared between desktop and mobile)

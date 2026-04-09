@@ -2,6 +2,7 @@ let offscreenCreating = null;
 let isListening = false;
 let sessionLogs = [];
 let eventSource = null;
+let heartbeatInterval = null;
 let backendUrl = 'https://spectaglint-ai-production.up.railway.app';
 let supabaseToken = '';
 
@@ -93,6 +94,21 @@ async function startListening() {
     }).catch(err => console.error('[Start Session Error]', err));
 
     chrome.runtime.sendMessage({ target: 'offscreen', action: 'start' });
+
+    // ── Start 30s heartbeat to keep backend session alive ──
+    // This lets the server know the extension is still running even across page reloads.
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+    heartbeatInterval = setInterval(() => {
+        if (!supabaseToken || !isListening) return;
+        fetch(`${backendUrl}/live/heartbeat`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supabaseToken}`
+            },
+            body: JSON.stringify({ status: 'LIVE' })
+        }).catch(() => null); // fire and forget
+    }, 30_000);
 }
 
 async function stopListening() {
@@ -105,6 +121,12 @@ async function stopListening() {
             await chrome.offscreen.closeDocument();
         }
     } catch (e) { }
+
+    // ── Clear heartbeat ──
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        heartbeatInterval = null;
+    }
 
     chrome.runtime.sendMessage({ target: 'popup', action: 'status-update', status: 'stopped' });
 

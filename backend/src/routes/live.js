@@ -7,8 +7,21 @@ const { addClient, broadcast } = require('../lib/LiveStream');
 // Setup multer for memory storage (we just pipe binary to Groq)
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Maintain state per user
+// Per-user in-memory state. Persists across SSE reconnects within a single process instance.
+// TTL cleanup runs every 10 min to evict sessions idle for more than 4 hours.
 const userState = new Map();
+const STALE_THRESHOLD_MS = 90_000;   // 90s without heartbeat → extension considered offline
+const STATE_TTL_MS = 4 * 60 * 60_000; // 4 hours idle → evict from memory
+
+setInterval(() => {
+    const cutoff = Date.now() - STATE_TTL_MS;
+    userState.forEach((state, userId) => {
+        const lastActivity = state.extensionLastSeen || 0;
+        if (lastActivity < cutoff) {
+            userState.delete(userId);
+        }
+    });
+}, 10 * 60_000); // run every 10 minutes
 
 function getUserState(userId) {
     if (!userState.has(userId)) {
@@ -17,7 +30,9 @@ function getUserState(userId) {
             pendingBuffer: '',
             lastTranscript: '',
             processedSentences: new Set(),
-            lastNormalized: ''
+            lastNormalized: '',
+            extensionStatus: 'STOPPED',
+            extensionLastSeen: null
         });
     }
     return userState.get(userId);
@@ -35,23 +50,62 @@ function pushLog(userId, htmlContent) {
     broadcast(userId, 'LIVE_LOG', { html: htmlContent });
 }
 
-/**
- * GET /live/stream
- * Connect SSE for receiving transcripts, logs, and answers in real-time.
- */
+// GET /live/stream — SSE channel per authenticated user
 router.get('/stream', (req, res) => {
-    const userId = req.user.id; // from authenticate middleware
+    const userId = req.user.id;
 
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); // Prevent Nginx/Railway proxy buffering
-    res.flushHeaders(); // flush the headers to establish connection
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
 
-    // Send an initial connected message
     res.write(`data: ${JSON.stringify({ type: 'CONNECTED', message: 'SSE Stream Ready' })}\n\n`);
 
+    // Re-hydrate current extension status without creating ghost state.
+    // If there's no entry yet, the extension has never connected — send STOPPED.
+    const existingState = userState.get(userId);
+    let currentStatus = 'STOPPED';
+    if (existingState) {
+        const isStale = existingState.extensionLastSeen &&
+            (Date.now() - existingState.extensionLastSeen > STALE_THRESHOLD_MS);
+        if (isStale && existingState.extensionStatus === 'LIVE') {
+            existingState.extensionStatus = 'STOPPED';
+        }
+        currentStatus = existingState.extensionStatus;
+    }
+    res.write(`data: ${JSON.stringify({ type: 'EXTENSION_STATUS', status: currentStatus })}\n\n`);
+
     addClient(userId, res);
+});
+
+// GET /live/extension-status — REST poll for extension link state
+router.get('/extension-status', (req, res) => {
+    const existing = userState.get(req.user.id);
+    if (!existing) return res.json({ status: 'STOPPED', linked: false, lastSeen: null });
+
+    const isStale = existing.extensionLastSeen &&
+        (Date.now() - existing.extensionLastSeen > STALE_THRESHOLD_MS);
+    const effectiveStatus = (isStale && existing.extensionStatus === 'LIVE') ? 'STOPPED' : existing.extensionStatus;
+
+    res.json({
+        status: effectiveStatus,
+        linked: existing.extensionLastSeen !== null,
+        lastSeen: existing.extensionLastSeen
+    });
+});
+
+/**
+ * POST /live/heartbeat
+ * Called every 30s by the background.js service worker to confirm the extension is alive.
+ * Keeps extensionLastSeen fresh — backend uses this to auto-degrade stale sessions.
+ */
+router.post('/heartbeat', (req, res) => {
+    const state = getUserState(req.user.id);
+    state.extensionLastSeen = Date.now();
+    // If the extension reports it's live, keep status synced
+    if (req.body?.status) state.extensionStatus = req.body.status;
+    res.json({ ok: true, serverTime: Date.now() });
 });
 
 /**
@@ -271,9 +325,13 @@ Always reply with ONLY this exact JSON:
  */
 router.post('/session', (req, res) => {
     const { status } = req.body; // 'LIVE' | 'STOPPED'
+    const state = getUserState(req.user.id);
+
+    // ── Persist status so SSE reconnects can re-hydrate it ──
+    state.extensionStatus = status;
+    state.extensionLastSeen = Date.now();
 
     if (status === 'LIVE') {
-        const state = getUserState(req.user.id);
         state.speechContext = [];
         state.pendingBuffer = '';
         state.lastTranscript = '';
