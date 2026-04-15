@@ -32,25 +32,37 @@ const IntelligenceFeed = () => {
 
     // ── Mobile fullscreen modal
     const [showFullscreen, setShowFullscreen] = useState(false);
+    const [showHelpModal, setShowHelpModal] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
     const [isOpening, setIsOpening] = useState(true);
 
     const openFullscreen = () => {
         setShowFullscreen(true);
         setIsOpening(true);
-        document.body.style.overflow = 'hidden';
         setTimeout(() => setIsOpening(false), 50);
     };
 
     const closeFullscreen = () => {
         setIsClosing(true);
-        document.body.style.overflow = '';
         setTimeout(() => {
             setShowFullscreen(false);
             setIsClosing(false);
             setIsOpening(true);
         }, 300);
     };
+
+    // ── Global Modal Body Scroll Lock ──
+    useEffect(() => {
+        if (showFullscreen || showHelpModal || actionToast.open) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [showFullscreen, showHelpModal, actionToast.open]);
 
     // ── Extension presence detection (PING/PONG via content.js bridge) ──
     // We send a PING_EXTENSION message; content.js replies with PONG_EXTENSION within ~100ms.
@@ -574,7 +586,7 @@ const IntelligenceFeed = () => {
 
                 {/* Right: Active Telemetry / Trans Matrix */}
                 <div className="md:col-span-5 flex flex-col gap-3">
-                    <ActiveSessionPanel logLines={logLines} isLive={isLive} onClear={clearTerminal} serviceMode={serviceMode} setServiceMode={setServiceMode} onExport={exportLog} />
+                    <ActiveSessionPanel logLines={logLines} isLive={isLive} onClear={clearTerminal} serviceMode={serviceMode} setServiceMode={setServiceMode} onExport={exportLog} onShowHelp={() => setShowHelpModal(true)} />
                 </div>
             </div>
 
@@ -588,7 +600,7 @@ const IntelligenceFeed = () => {
                 </div>
 
                 {/* Mobile Session Metrics */}
-                <ActiveSessionPanel logLines={logLines} isLive={isLive} onClear={clearTerminal} serviceMode={serviceMode} setServiceMode={setServiceMode} onExport={exportLog} />
+                <ActiveSessionPanel logLines={logLines} isLive={isLive} onClear={clearTerminal} serviceMode={serviceMode} setServiceMode={setServiceMode} onExport={exportLog} onShowHelp={() => setShowHelpModal(true)} />
             </div>
 
             {/* ── MOBILE FULLSCREEN SLIDE-IN MODAL */}
@@ -633,6 +645,73 @@ const IntelligenceFeed = () => {
                         {/* Full terminal content in modal */}
                         <TerminalContent scrollRef={mobileTerminalRef} className="flex-1" {...terminalProps} />
 
+                    </div>
+                </div>
+            )}
+
+            {/* ── HELP / GUIDE MODAL ── */}
+            {showHelpModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 transition-opacity">
+                    <div className="bg-[#030504] border border-primary/30 w-full max-w-2xl max-h-[85vh] overflow-y-auto relative shadow-[0_0_40px_rgba(142,255,113,0.1)] flex flex-col">
+                        <div className="sticky top-0 bg-[#030504] border-b border-outline-variant/20 p-4 md:p-6 flex items-center justify-between z-10">
+                            <div className="flex items-center gap-3">
+                                <span className="material-symbols-outlined text-primary text-2xl">menu_book</span>
+                                <div>
+                                    <h2 className="font-headline font-black text-sm md:text-base text-on-surface uppercase tracking-widest">PROTOCOL_DOCUMENTATION</h2>
+                                    <p className="font-['JetBrains_Mono'] text-[9px] text-primary/60 uppercase tracking-widest">SYSTEM MANUAL // SPECTAGLINT_AI</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowHelpModal(false)} className="text-on-surface-variant/50 hover:text-primary transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-4 md:p-6 space-y-6 font-['JetBrains_Mono'] text-xs">
+                            <div className="border border-outline-variant/10 p-4 bg-surface-container-lowest">
+                                <h3 className="text-[10px] md:text-sm font-black text-primary mb-2 uppercase tracking-widest flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-sm">extension</span> 1. BROWSER EXTENSION (CRITICAL)
+                                </h3>
+                                <p className="text-on-surface-variant leading-relaxed mb-3">
+                                    To use any <strong>LIVE</strong> feature (Live Answers / Live Transcription), you must install our Chrome Extension. The extension acts as the "ear" that securely captures meeting audio and pipelines it into this terminal.
+                                </p>
+                                <ul className="space-y-2 text-on-surface-variant/80 pl-2">
+                                    <li className="flex items-start gap-2"><span className="text-primary mt-0.5">►</span>Ensure the extension is installed and active.</li>
+                                    <li className="flex items-start gap-2"><span className="text-primary mt-0.5">►</span>Toggle the "STREAM_ON/OFF" switch at the top of this page to begin or end audio capture.</li>
+                                </ul>
+                            </div>
+                            <div className="space-y-4">
+                                <h3 className="font-headline font-black text-xs md:text-sm text-on-surface uppercase tracking-widest border-b border-outline-variant/10 pb-2">AVAILABLE PROTOCOLS</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="border hover:border-primary/40 border-outline-variant/10 p-3 bg-surface-container-lowest transition-colors group">
+                                        <div className="flex items-center gap-2 text-primary mb-1">
+                                            <span className="material-symbols-outlined text-sm">chat</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest">LIVE AI ANSWERS</span>
+                                        </div>
+                                        <p className="text-[10px] text-on-surface-variant/70 leading-relaxed group-hover:text-on-surface-variant transition-colors">Automatically detects interview questions from your ongoing live meeting and streams highly accurate AI answers directly into the terminal window.</p>
+                                    </div>
+                                    <div className="border hover:border-tertiary/40 border-outline-variant/10 p-3 bg-surface-container-lowest transition-colors group">
+                                        <div className="flex items-center gap-2 text-tertiary mb-1">
+                                            <span className="material-symbols-outlined text-sm">closed_caption</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest">LIVE TRANSCRIPTION</span>
+                                        </div>
+                                        <p className="text-[10px] text-on-surface-variant/70 leading-relaxed group-hover:text-on-surface-variant transition-colors">Converts spoken voices from your active live meeting into raw text format without AI answering logic.</p>
+                                    </div>
+                                    <div className="border hover:border-primary/40 border-outline-variant/10 p-3 bg-surface-container-lowest transition-colors group">
+                                        <div className="flex items-center gap-2 text-primary mb-1">
+                                            <span className="material-symbols-outlined text-sm">audio_file</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest">FILE AI ANSWERS</span>
+                                        </div>
+                                        <p className="text-[10px] text-on-surface-variant/70 leading-relaxed group-hover:text-on-surface-variant transition-colors">Upload an existing recording. The system will scan the entire file, extract asked questions, and generate precise answers.</p>
+                                    </div>
+                                    <div className="border hover:border-tertiary/40 border-outline-variant/10 p-3 bg-surface-container-lowest transition-colors group">
+                                        <div className="flex items-center gap-2 text-tertiary mb-1">
+                                            <span className="material-symbols-outlined text-sm">description</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest">FILE TRANSCRIPTION</span>
+                                        </div>
+                                        <p className="text-[10px] text-on-surface-variant/70 leading-relaxed group-hover:text-on-surface-variant transition-colors">Upload pre-recorded audio files for high-fidelity bulk text transcription. The output will be piped into the terminal block-by-block.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
@@ -824,7 +903,7 @@ const TerminalHeader = ({ isLive, onClear }) => (
 );
 
 // ── Right panel: Active Session Analytics & Routing
-const ActiveSessionPanel = ({ logLines, isLive, onClear, serviceMode, setServiceMode, onExport }) => {
+const ActiveSessionPanel = ({ logLines, isLive, onClear, serviceMode, setServiceMode, onExport, onShowHelp }) => {
     const MODES = [
         { id: 'LIVE_ANSWERS', icon: 'chat', label: 'LIVE AI ANSWERS', desc: 'Real-time Q&A via Ext.' },
         { id: 'LIVE_TRANSCRIPTION', icon: 'closed_caption', label: 'LIVE TRANSCRIPTION', desc: 'Real-time text feed' },
@@ -837,12 +916,22 @@ const ActiveSessionPanel = ({ logLines, isLive, onClear, serviceMode, setService
             {/* SERVICE ROUTING MODE */}
             <div className="bg-surface-container border border-outline-variant/20 p-3 md:p-5 font-['JetBrains_Mono'] relative overflow-hidden group shrink-0">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors pointer-events-none" />
-                <div className="relative z-10 flex items-center mb-3">
-                    <span className="material-symbols-outlined text-primary text-sm mr-2">settings_suggest</span>
-                    <span className="text-[10px] font-black uppercase text-on-surface tracking-widest">OPERATION PROTOCOL</span>
+                <div className="relative z-10 flex items-center justify-between mb-3">
+                    <div className="flex items-center">
+                        <span className="material-symbols-outlined text-primary text-sm mr-2">settings_suggest</span>
+                        <span className="text-[10px] font-black uppercase text-on-surface tracking-widest">OPERATION PROTOCOL</span>
+                    </div>
+                    <button
+                        onClick={onShowHelp}
+                        className="flex items-center gap-1 text-[9px] text-primary/70 hover:text-primary transition-colors tracking-widest font-black bg-primary/5 hover:bg-primary/10 px-2 py-1 rounded-sm border border-primary/20"
+                        title="How to use protocols"
+                    >
+                        <span className="material-symbols-outlined text-[12px]">help</span>
+                        GUIDE
+                    </button>
                 </div>
 
-                <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="relative z-10 grid grid-cols-2 gap-2">
                     {MODES.map(mode => {
                         const isActive = serviceMode === mode.id;
                         return (

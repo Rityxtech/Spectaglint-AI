@@ -10,6 +10,7 @@ import Config from './pages/Config';
 import Settings from './pages/Settings';
 import Wallet from './pages/Wallet';
 import Profile from './pages/Profile';
+import JobBoard from './pages/JobBoard';
 import ExtensionInstall from './pages/ExtensionInstall';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -32,6 +33,7 @@ function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/wallet" element={<Wallet />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/job-hunt" element={<JobBoard />} />
           </Route>
         </Route>
       </Routes>

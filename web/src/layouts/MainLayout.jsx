@@ -8,7 +8,8 @@ import LoggedHeader from '../components/LoggedHeader';
 const NAV_ITEMS = [
     { to: '/dashboard', label: 'TERMINAL', icon: 'terminal' },
     { to: '/wallet', label: 'WALLET', icon: 'toll' },
-    { to: '/feed', label: 'LIVE FEED', icon: 'electric_bolt' },
+    { to: '/feed', label: 'LIVE INTELLIGENCE', icon: 'electric_bolt' },
+    { to: '/job-hunt', label: 'JOB BOARD', icon: 'work' },
     { to: '/profile', label: 'PERSONA', icon: 'person' },
     { to: '/history', label: 'HISTORY', icon: 'history' },
     { to: '/config', label: 'NODES', icon: 'settings_input_component' },
@@ -74,7 +75,7 @@ const MainLayout = () => {
                                     to={to}
                                     onClick={() => setSidebarOpen(false)}
                                     className={({ isActive }) =>
-                                        `flex items-center gap-3 px-3 py-3 font-['Inter'] font-black tracking-[0.1em] text-[15px] md:text-[11px] uppercase transition-colors duration-150 cursor-pointer
+                                        `flex items-center gap-3 px-3 py-3 font-['Inter'] font-black tracking-[0.1em] text-[15px] md:text-[13px] uppercase transition-colors duration-150 cursor-pointer
                     ${isActive
                                             ? 'text-primary border-l-2 border-primary bg-primary/5 pl-[10px]'
                                             : 'text-on-surface-variant/60 hover:text-on-surface border-l-2 border-transparent hover:bg-surface-container/50'
