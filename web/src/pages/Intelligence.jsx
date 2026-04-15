@@ -502,7 +502,7 @@ const IntelligenceFeed = () => {
             />
 
             {/* ── STATUS BANNER */}
-            <div className={`flex items-center justify-between px-3 md:px-4 py-2 md:py-2.5 border font-['JetBrains_Mono'] text-[9px] md:text-[10px] uppercase tracking-widest transition-all duration-500 ${isCheckingExt
+            <div className={`-mt-[9px] md:mt-0 flex items-center justify-between px-3 md:px-4 py-2 md:py-2.5 border font-['JetBrains_Mono'] text-[9px] md:text-[10px] uppercase tracking-widest transition-all duration-500 ${isCheckingExt
                 ? 'bg-surface-container border-outline-variant/20 text-on-surface-variant/50'
                 : extLinked === false
                     ? 'bg-yellow-900/10 border-yellow-600/40 text-yellow-400'
@@ -550,7 +550,7 @@ const IntelligenceFeed = () => {
                     {/* ── Extension not installed: show install CTA ── */}
                     {!isCheckingExt && extLinked === false && (
                         <a
-                            href="/install"
+                            href="/install-extension"
                             className="flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 border border-yellow-500/50 text-yellow-400 text-[8px] md:text-[9px] font-black uppercase tracking-widest hover:bg-yellow-400/10 transition-colors"
                         >
                             <span className="material-symbols-outlined text-[12px] md:text-[14px]">extension</span>
@@ -905,10 +905,10 @@ const TerminalHeader = ({ isLive, onClear }) => (
 // ── Right panel: Active Session Analytics & Routing
 const ActiveSessionPanel = ({ logLines, isLive, onClear, serviceMode, setServiceMode, onExport, onShowHelp }) => {
     const MODES = [
-        { id: 'LIVE_ANSWERS', icon: 'chat', label: 'LIVE AI ANSWERS', desc: 'Real-time Q&A via Ext.' },
-        { id: 'LIVE_TRANSCRIPTION', icon: 'closed_caption', label: 'LIVE TRANSCRIPTION', desc: 'Real-time text feed' },
-        { id: 'FILE_ANSWERS', icon: 'audio_file', label: 'FILE AI ANSWERS', desc: 'Upload audio for Q&A' },
-        { id: 'FILE_TRANSCRIPTION', icon: 'description', label: 'FILE TRANSCRIPTION', desc: 'Upload audio to text' }
+        { id: 'LIVE_ANSWERS', icon: 'chat', label: 'LIVE AI ANSWERS', desc: 'Real-time Q&A via Ext.', mobileOrder: 'order-1' },
+        { id: 'LIVE_TRANSCRIPTION', icon: 'closed_caption', label: 'LIVE TRANSCRIPTION', desc: 'Real-time text feed', mobileOrder: 'order-3 md:order-2' },
+        { id: 'FILE_ANSWERS', icon: 'audio_file', label: 'FILE AI ANSWERS', desc: 'Upload audio for Q&A', mobileOrder: 'order-2 md:order-3' },
+        { id: 'FILE_TRANSCRIPTION', icon: 'description', label: 'FILE TRANSCRIPTION', desc: 'Upload audio to text', mobileOrder: 'order-4' }
     ];
 
     return (
@@ -938,7 +938,7 @@ const ActiveSessionPanel = ({ logLines, isLive, onClear, serviceMode, setService
                             <button
                                 key={mode.id}
                                 onClick={() => setServiceMode && setServiceMode(mode.id)}
-                                className={`flex items-start gap-2.5 p-2.5 border text-left transition-all ${isActive
+                                className={`flex items-start gap-2.5 p-2.5 border text-left transition-all ${mode.mobileOrder} ${isActive
                                     ? 'bg-primary/5 border-primary shadow-[0_0_10px_rgba(142,255,113,0.05)]'
                                     : 'bg-[#030504] border-outline-variant/10 hover:border-primary/40'
                                     }`}

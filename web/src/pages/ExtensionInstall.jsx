@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Download, Monitor, CheckCircle, AlertCircle } from 'lucide-react';
+import TechLoader from '../components/TechLoader';
 
 const ExtensionInstall = () => {
   const [installInfo, setInstallInfo] = useState(null);
@@ -34,12 +35,12 @@ const ExtensionInstall = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#030504] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-on-surface-variant">Loading extension info...</p>
-        </div>
-      </div>
+      <TechLoader
+        title="FETCHING_EXTENSION_DATA"
+        subtitle="LOADING_INSTALL_MANIFEST..."
+        size="small"
+        progress={55}
+      />
     );
   }
 

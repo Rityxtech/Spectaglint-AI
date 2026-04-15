@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
-
+import TechLoader from '../components/TechLoader';
 import { api } from '../lib/api';
 
 /* ── Animated counter hook ── */
@@ -157,20 +157,12 @@ const Dashboard = () => {
 
     if (loading) {
         return (
-            <div className="w-full pb-0 space-y-[10px] md:space-y-8">
-                <PageHeader
-                    title="TERMINAL_CONTROL"
-                    label="SYSTEM // OVERVIEW"
-                    description="Aggregated neural telemetry and session health metrics. Monitor global meeting activity and system-wide coin distribution from this command hub."
-                    mobileDescription="Monitor global meeting activity and system-wide coin distribution from this command hub."
-                />
-                <div className="flex items-center justify-center py-12">
-                    <div className="text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                        <p className="text-on-surface-variant/60 text-sm">LOADING_DASHBOARD_DATA...</p>
-                    </div>
-                </div>
-            </div>
+            <TechLoader
+                title="LOADING_TERMINAL_DATA"
+                subtitle="LOADING_DASHBOARD_METRICS..."
+                size="small"
+                progress={65}
+            />
         );
     }
 
